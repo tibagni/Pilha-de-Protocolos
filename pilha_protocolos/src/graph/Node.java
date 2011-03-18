@@ -36,4 +36,15 @@ public class Node {
         return logicalID;
     }
 
+    @Override
+    public boolean equals(Object o)
+    {
+        Node n = (Node) o;
+
+        if(this.getIP().equals(n.getIP()) && this.getLogicalID().equals(n.getLogicalID()) && this.getPort().equals(n.getPort()))
+            return true;
+
+        return false;
+    }
+
 }

@@ -5,29 +5,37 @@
 
 package graph;
 
+import java.util.HashMap;
+
+
 /**
  *
  * @author belitos
  */
 public class Graph {
 
+    private HashMap<String,Node> topology;
+
 
     public Graph()
     {
-
+        topology = new HashMap<String,Node>();
     }
 
 
     public void addNode(Node n)
     {
-        System.out.printf("%s\t%s\t%s\n",n.getLogicalID(),n.getIP(),n.getPort());
+        topology.put(n.getLogicalID(), n);
 
+    }
+    public Node getNode(String key)
+    {
+        return topology.get(key);
     }
 
     public void addConnection(String n1, String n2, String MTU)
     {
-        System.out.printf("Oi:%s\t%s\t%s\n",n1,n2,MTU);
-
+        System.out.printf("Oi:%s\t%s\t%s\t%d\n",n1,n2,MTU,topology.size());
     }
 
 }
