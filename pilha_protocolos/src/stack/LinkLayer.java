@@ -12,9 +12,9 @@ package stack;
  *
  * @author belitos
  */
-public class Link {
+public class LinkLayer {
 
-    public Link()
+    public LinkLayer()
     {
        
     }
