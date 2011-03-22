@@ -82,7 +82,8 @@ public class ProtocolStack {
             {
                 graph.addHost(new Host(token.nextToken(), token.nextToken(), token.nextToken()));
             } else {
-                graph.addConnection(token.nextToken(), token.nextToken(), token.nextToken());
+                graph.addConnection(graph.getHost(token.nextToken()),
+                        graph.getHost(token.nextToken()), Integer.parseInt(token.nextToken()));
             }
         }
 

@@ -18,15 +18,15 @@ public class Host {
     private String IP;
     private String port;
 
-    // Neighbours
-    private HashMap<String, String> neighbours;
+    // Neighbours <LogicalId, Connection>
+    private HashMap<String, Connection> neighbours;
 
     public Host(String lID, String ip, String p) {
         logicalID = lID;
         IP = ip;
         port = p;
 
-        neighbours = new HashMap<String, String>();
+        neighbours = new HashMap<String, Connection>();
     }
 
     public String getPort() {
@@ -42,8 +42,8 @@ public class Host {
     }
 
 
-    public void addNeighbour(String hostId, String mtu) {
-        neighbours.put(hostId, mtu);
+    public void addNeighbour(Host host, int mtu) {
+        neighbours.put(host.getLogicalID(), new Connection(host, mtu));
     }
 
     public boolean iNeighbour(String hostId) {
@@ -53,7 +53,7 @@ public class Host {
         return false;
     }
 
-    public String getLinkMtu(String hostId) {
+    public Connection getLinkMtu(String hostId) {
         return neighbours.get(hostId);
     }
 
@@ -69,4 +69,27 @@ public class Host {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return getLogicalID();
+    }
+
+    public class Connection {
+        private Host host;
+        private int mtu;
+
+
+        public Connection(Host h, int m) {
+            host = h;
+            mtu = m;
+        }
+
+        public Host getHost() {
+            return host;
+        }
+
+        public int getLinkMtu() {
+            return mtu;
+        }
+    }
 }

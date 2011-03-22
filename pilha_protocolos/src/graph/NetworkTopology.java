@@ -31,13 +31,13 @@ public class NetworkTopology {
         return hosts.get(key);
     }
 
-    public void addConnection(String n1, String n2, String MTU) {
+    public void addConnection(Host n1, Host n2, int mtu) {
         Host localhost = ProtocolStack.getLocalhost();
 
         // At first we only need to store the neighbours
-        if(n1.equals(localhost.getLogicalID())) {
-            localhost.addNeighbour(n2, MTU);
-            System.out.printf("Oi:%s\t%s\t%s\t%d\n", n1, n2, MTU, hosts.size());
+        if(n1.getLogicalID().equals(localhost.getLogicalID())) {
+            localhost.addNeighbour(n2, mtu);
+            System.out.printf("Oi:%s\t%s\t%s\t%d\n", n1, n2, mtu, hosts.size());
         }
     }
 }
