@@ -18,6 +18,7 @@ import java.util.StringTokenizer;
 public class ProtocolStack {
 
     public static final String PORT = "1234";
+    public static final int MAX_MTU_SIZE = 5000;
 
     private LinkLayer link;
     public static final String LINK_STRING = "Enlaces";
