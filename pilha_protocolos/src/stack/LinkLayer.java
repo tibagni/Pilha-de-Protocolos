@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public class LinkLayer implements Runnable{
 
-    private static LinkLayer linkLayer;
+    private static LinkLayer linkLayer = null;
 
     private LinkLayer()
     {

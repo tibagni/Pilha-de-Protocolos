@@ -19,7 +19,7 @@ public class ProtocolStack {
 
     public static final String PORT = "1234";
 
-    private LinkLayer link;
+   
     public static final String LINK_STRING = "Enlaces";
     public static final String END_STRING = "Fim";
     private NetworkTopology graph;
@@ -27,24 +27,25 @@ public class ProtocolStack {
     // Stores the loopback node of this host
     private static Host localhost = null;
 
-    public ProtocolStack(String filePath) {
+    public ProtocolStack(String filePath,String logicalID) {
         graph = new NetworkTopology();
 
-        readFile(filePath);
+        readFile(filePath,logicalID);
     }
 
-    public static void setLocalhost(String id) {
-        // The localhost address is set just once.
-        if(localhost == null) {
-            localhost = new Host(id, "localhost", PORT);
-        }
+    public static void setLocalHost(Host h)
+    {
+        if(localhost == null)
+            localhost = h;
+
     }
+   
 
     public static Host getLocalhost() {
         return localhost;
     }
 
-    private void readFile(String path) {
+    private void readFile(String path,String logicalID) {
         Scanner in = null;
         String line;
         StringTokenizer token;
@@ -70,6 +71,7 @@ public class ProtocolStack {
                 break;
             } else if (line.equals(LINK_STRING)) {
                 isConnection = true;
+                ProtocolStack.setLocalHost(graph.getHost(logicalID));
                 continue;
             }
 
@@ -90,6 +92,7 @@ public class ProtocolStack {
         if (in != null) {
             in.close();
         }
+
     }
 
     private String replaceCharacters(String line) {

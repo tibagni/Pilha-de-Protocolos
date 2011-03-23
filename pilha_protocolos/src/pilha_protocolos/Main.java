@@ -20,12 +20,13 @@ public class Main {
     public static void main(String[] args) {
 
         // TODO store the Logical ID from command-line
-        ProtocolStack.setLocalhost("1");
+        
 
         /*
          * Dont confuse with java.util.Stack!
          */
-        ProtocolStack s = new ProtocolStack("top.cnf");
+        ProtocolStack s = new ProtocolStack("top.cnf","1");
+
     }
 
 }
