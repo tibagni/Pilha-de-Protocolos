@@ -44,7 +44,7 @@ public class ProtocolStack {
 
         pool.execute(LinkLayer.getInstance());
 
-        pool.shutdown();
+        
 
 
 
@@ -66,6 +66,10 @@ public class ProtocolStack {
             System.out.printf("Sim!\n\n");
         else
             System.out.printf("Nao!\n\n");
+
+        pool.shutdownNow();
+
+        System.exit(1);
         
     }
 

@@ -37,7 +37,7 @@ public class NetworkTopology {
         // At first we only need to store the neighbours
         if(n1.getLogicalID().equals(localhost.getLogicalID())) {
             localhost.addNeighbour(n2, mtu);
-            System.out.printf("Oi:%s\t%s\t%s\t%d\n", n1, n2, mtu, hosts.size());
+            
         }
     }
 }

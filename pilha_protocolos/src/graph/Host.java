@@ -4,6 +4,7 @@
  */
 package graph;
 
+
 import java.util.HashMap;
 
 /**
@@ -15,26 +16,35 @@ public class Host {
     private String logicalID; // Our IP
 
     // Ou MAC ADDRESS
-    private String IP;
-    private String port;
+    //private String IP;
+   // private String port;
+
+    private MAC mac;
 
     // Neighbours <LogicalId, Connection>
     private HashMap<String, Connection> neighbours;
 
     public Host(String lID, String ip, String p) {
         logicalID = lID;
-        IP = ip;
-        port = p;
+        //IP = ip;
+        //port = p;
+        mac = new MAC(ip,p);
 
         neighbours = new HashMap<String, Connection>();
     }
 
+    /*
     public String getPort() {
         return port;
     }
 
     public String getIP() {
         return IP;
+    }*/
+
+    public MAC getMAC()
+    {
+        return mac;
     }
 
     public String getLogicalID() {
@@ -61,8 +71,8 @@ public class Host {
     public boolean equals(Object o) {
         Host n = (Host) o;
 
-        if (this.getIP().equals(n.getIP()) && this.getLogicalID().equals(n.getLogicalID())
-                && this.getPort().equals(n.getPort())) {
+        if (this.getMAC().getIP().equals(n.getMAC().getIP()) && this.getLogicalID().equals(n.getLogicalID())
+                && this.getMAC().getPort().equals(n.getMAC().getPort())) {
             return true;
         }
 
@@ -92,4 +102,6 @@ public class Host {
             return mtu;
         }
     }
+
+    
 }
