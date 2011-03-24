@@ -10,6 +10,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import pdu.Frame;
 
 /**
  *
@@ -17,7 +22,7 @@ import java.util.StringTokenizer;
  */
 public class ProtocolStack {
 
-    public static final String PORT = "1234";
+    
     public static final int MAX_MTU_SIZE = 5000;
 
    
@@ -28,10 +33,40 @@ public class ProtocolStack {
     // Stores the loopback node of this host
     private static Host localhost = null;
 
+    private ExecutorService pool;
+
     public ProtocolStack(String filePath,String logicalID) {
         graph = new NetworkTopology();
 
         readFile(filePath,logicalID);
+
+        pool = Executors.newFixedThreadPool(1);
+
+        pool.execute(LinkLayer.getInstance());
+
+        pool.shutdown();
+
+
+
+
+
+       
+    }
+
+    public void send()
+    {
+        try {
+            Thread.sleep(203);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(ProtocolStack.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
+        if(LinkLayer.getInstance().sendFrame(graph.getHost("2"),new Frame()))
+            System.out.printf("Sim!\n\n");
+        else
+            System.out.printf("Nao!\n\n");
+        
     }
 
     public static void setLocalHost(Host h)

@@ -6,6 +6,7 @@
 package pilha_protocolos;
 
 
+
 import stack.ProtocolStack;
 
 /**
@@ -26,6 +27,9 @@ public class Main {
          * Dont confuse with java.util.Stack!
          */
         ProtocolStack s = new ProtocolStack("top.cnf","1");
+
+        s.send();
+
 
     }
 

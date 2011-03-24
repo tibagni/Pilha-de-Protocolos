@@ -15,11 +15,11 @@ import stack.ProtocolStack;
 public class NetworkTopology {
 
     private HashMap<String, Host> hosts;
-    private HashMap<String, String> connections;
+   
 
     public NetworkTopology() {
         hosts = new HashMap<String, Host>();
-        connections = new HashMap<String, String>();
+       
     }
 
     public void addHost(Host n) {

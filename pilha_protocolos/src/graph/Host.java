@@ -46,7 +46,7 @@ public class Host {
         neighbours.put(host.getLogicalID(), new Connection(host, mtu));
     }
 
-    public boolean iNeighbour(String hostId) {
+    public boolean isNeighbour(String hostId) {
         if(neighbours.containsKey(hostId)) {
             return true;
         }

@@ -11,6 +11,19 @@ import java.io.Serializable;
  *
  * @author tiago
  */
-public class Frame {
+public class Frame implements Serializable {
+
+    private String s;
+
+    public Frame()
+    {
+
+        s = "oi";
+    }
+
+    public String getS()
+    {
+        return s;
+    }
 
 }
