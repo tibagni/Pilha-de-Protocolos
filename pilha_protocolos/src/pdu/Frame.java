@@ -24,7 +24,7 @@ public class Frame implements Serializable {
     public Frame()
     {
 
-        st = "fuck you";
+        st = "Sou bom";
     }
     
     public Frame(int t, int c, MAC s, MAC d)
@@ -37,7 +37,7 @@ public class Frame implements Serializable {
         
     }
 
-    public int getCheckSum()
+    public int getLength()
     {
         return checksum;
     }
@@ -60,6 +60,11 @@ public class Frame implements Serializable {
     public MAC getDestination()
     {
         return dest;
+    }
+
+    public void setLength(int c)
+    {
+        checksum = c;
     }
 
 }

@@ -17,8 +17,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 import pdu.Frame;
 import pilha_protocolos.GarbledDatagramSocket;
 
@@ -77,12 +77,16 @@ public class LinkLayer implements Runnable{
     @Override
     public void finalize()
     {
+
         
         socket.close();
     }
 
     public boolean sendFrame(Host h,Frame f)
     {
+        byte[] sendPacket;
+        
+        DatagramPacket packet;
         Host localhost = ProtocolStack.getLocalhost();
 
         if(h == null)
@@ -91,21 +95,30 @@ public class LinkLayer implements Runnable{
         if(!localhost.isNeighbour(h.getLogicalID()))
             return false;
 
+
+
         try {
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutput out = new ObjectOutputStream(bos);
-            out.writeObject(f);
-            byte[] frameBytes = bos.toByteArray();
-            DatagramPacket packet;
             
-            packet = new DatagramPacket(frameBytes, frameBytes.length, InetAddress.getByName(h.getMAC().getIP()), Integer.parseInt(h.getMAC().getPort()));
+
+
+
+            sendPacket  = calculateCheckSum(f);
+
+             if(sendPacket.length > ProtocolStack.MAX_MTU_SIZE )
+                return false;
+            
+            
+            
+            packet = new DatagramPacket(sendPacket, sendPacket.length, InetAddress.getByName(h.getMAC().getIP()), Integer.parseInt(h.getMAC().getPort()));
             socket.send(packet);
 
         } catch (UnknownHostException ex) {
-            Logger.getLogger(LinkLayer.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.printf("UnkownHostException - send packet!\n\n");
+            System.exit(1);
         } catch (IOException ex) {
-                Logger.getLogger(LinkLayer.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.printf("IOException - send packet!\n\n");
+            System.exit(1);
         }
 
 
@@ -113,6 +126,60 @@ public class LinkLayer implements Runnable{
 
 
         return true;
+    }
+
+    private byte[] calculateCheckSum(Frame f)
+    {
+         byte[] frameBytes = null;
+         byte[] newFrame = null;
+         byte[] checkSum;
+         ObjectOutput out;
+         ByteArrayOutputStream bos;
+         int i;
+
+        try {
+           
+            bos = new ByteArrayOutputStream();
+            out = new ObjectOutputStream(bos);
+            out.writeObject(f);
+            frameBytes = bos.toByteArray();
+
+            f.setLength(frameBytes.length);
+
+            bos = new ByteArrayOutputStream();
+            out = new ObjectOutputStream(bos);
+            out.writeObject(f);
+            frameBytes = bos.toByteArray();
+
+            Checksum checksumEngine = new Adler32();
+            checksumEngine.update(frameBytes, 0, frameBytes.length);
+            checkSum = String.valueOf(checksumEngine.getValue()).getBytes();
+
+
+            
+
+           
+
+            
+
+            System.out.printf("Check:%d\t%d\n\n",checksumEngine.getValue(),f.getLength());
+            
+            newFrame = new byte[frameBytes.length + checkSum.length];
+
+            for(i = 0; i < frameBytes.length; i++)
+                newFrame[i] = frameBytes[i];
+
+            for(int j = i, k = 0; j < checkSum.length; j++, k++)
+                newFrame[j] = checkSum[k];
+
+            checksumEngine.reset();
+
+        } catch (IOException ex) {
+            System.err.printf("IOException - checksum!\n\n");
+            System.exit(1);
+        }
+
+         return newFrame;
     }
 
     /**
@@ -127,8 +194,10 @@ public class LinkLayer implements Runnable{
 
 
                 byte[] frame = new byte[ProtocolStack.MAX_MTU_SIZE];
+                byte[] checkSum,bytes;
                 DatagramPacket receivedFrame = new DatagramPacket(frame, frame.length);
                 Frame f = null;
+
 
                 try {
                      
@@ -141,7 +210,21 @@ public class LinkLayer implements Runnable{
                     // Now we have to cast the Object to a Frame
                     f = (Frame) in.readObject();
 
-                    System.out.printf("%s\n\n",f.getS());
+                    System.out.printf("%s\t%d\n\n",f.getS(),f.getLength());
+                    
+                    bytes = receivedFrame.getData();
+
+                    checkSum = new byte[f.getLength()];
+
+                    for(int i = 0; i < f.getLength(); i++)
+                        checkSum[i] = bytes[i];
+
+                     Checksum checksumEngine = new Adler32();
+                     checksumEngine.update(checkSum, 0, checkSum.length);
+
+                     System.out.printf("%d\n\n",checksumEngine.getValue());
+                     checksumEngine.reset();
+
 
                 } catch(ClassNotFoundException ex) {
                     // The link layer should not fail because some frame is broken
