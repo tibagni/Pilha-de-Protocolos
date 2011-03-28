@@ -63,9 +63,10 @@ public class ProtocolStack {
         
         
         if(LinkLayer.getInstance().sendFrame(graph.getHost("2"),new Frame()))
-            System.out.printf("Sim!\n\n");
+            System.out.printf("Packet sent!\n\n");
         else
-            System.out.printf("Nao!\n\n");
+            System.out.printf("Can't send the packet to this host!\n\n");
+       
 
         pool.shutdownNow();
 

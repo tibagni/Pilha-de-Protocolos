@@ -24,7 +24,7 @@ public class Frame implements Serializable {
     public Frame()
     {
 
-        st = "Sou bom";
+        st = "Sou bom7897987897897987460000000000000000000000000000000000212132";
     }
     
     public Frame(int t, int c, MAC s, MAC d)
