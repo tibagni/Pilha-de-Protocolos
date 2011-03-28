@@ -55,22 +55,35 @@ public class ProtocolStack {
 
     public void send()
     {
-        try {
-            Thread.sleep(203);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(ProtocolStack.class.getName()).log(Level.SEVERE, null, ex);
+        Scanner s = new Scanner(System.in);
+        int i = 1;
+        Host h;
+
+        while(true)
+        {
+            System.out.printf("--Current topology--\n");
+
+            while((h = graph.getHost(Integer.toString(i))) != null)
+            {
+                System.out.printf("ID:%s\tIP:%s\tPort:%s\n\n",h.getLogicalID(),h.getMAC().getIP(),h.getMAC().getPort());
+                i++;
+            }
+            i = 1;
+
+
+            System.out.printf("What host you want to send a msg?");
+
+        
+            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(s.nextInt())),new Frame()))
+                System.out.printf("Packet sent!\n\n");
+            else
+                System.out.printf("You are not connected to this host or MTU exceeded!\n\n");
         }
-        
-        
-        if(LinkLayer.getInstance().sendFrame(graph.getHost("2"),new Frame()))
-            System.out.printf("Packet sent!\n\n");
-        else
-            System.out.printf("Can't send the packet to this host!\n\n");
        
 
-        pool.shutdownNow();
+        //pool.shutdownNow();
 
-        System.exit(1);
+        //System.exit(1);
         
     }
 

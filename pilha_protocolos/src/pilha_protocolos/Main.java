@@ -23,10 +23,15 @@ public class Main {
         // TODO store the Logical ID from command-line
         
 
+        if(args.length == 0 || args.length > 2 || args.length == 1)
+        {
+            System.err.printf("First argument is the location of cnf file, second the logical ID of the host!\n\n");
+            System.exit(1);
+        }
         /*
          * Dont confuse with java.util.Stack!
          */
-        ProtocolStack s = new ProtocolStack("top.cnf","1");
+        ProtocolStack s = new ProtocolStack(args[0],args[1]);
 
         s.send();
 

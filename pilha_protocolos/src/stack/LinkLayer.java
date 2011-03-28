@@ -17,7 +17,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import pdu.Frame;
@@ -134,11 +135,9 @@ public class LinkLayer implements Runnable{
     private byte[] calculateCheckSum(Frame f)
     {
          byte[] frameBytes = null;
-         byte[] newFrame = null;
-         byte[] checkSum;
          ObjectOutput out;
          ByteArrayOutputStream bos;
-         int i;
+        
 
         try {
            
@@ -147,35 +146,22 @@ public class LinkLayer implements Runnable{
             out.writeObject(f);
             frameBytes = bos.toByteArray();
 
-            f.setLength(frameBytes.length);
+            
+
+            
+
+            Checksum checksumEngine = new Adler32();
+            checksumEngine.update(frameBytes, 0, frameBytes.length);
+            f.setCheckSum(checksumEngine.getValue());
+
+            
 
             bos = new ByteArrayOutputStream();
             out = new ObjectOutputStream(bos);
             out.writeObject(f);
             frameBytes = bos.toByteArray();
 
-            Checksum checksumEngine = new Adler32();
-            checksumEngine.update(frameBytes, 0, frameBytes.length);
-            checkSum = String.valueOf(checksumEngine.getValue()).getBytes();
 
-
-            
-
-           
-
-            
-           
-           
-            
-            newFrame = new byte[frameBytes.length + checkSum.length];
-
-            //System.out.printf("Check:%d\t%d\t%d\n\n",checksumEngine.getValue(),f.getLength(), checkSum.length);
-
-            for(i = 0; i < frameBytes.length; i++)
-                newFrame[i] = frameBytes[i];
-
-            for(int k = 0; k < checkSum.length; i++, k++)
-                newFrame[i] = checkSum[k];
 
             checksumEngine.reset();
 
@@ -190,7 +176,7 @@ public class LinkLayer implements Runnable{
             System.exit(1);
         }
 
-         return newFrame;
+         return frameBytes;
     }
 
     
@@ -206,9 +192,13 @@ public class LinkLayer implements Runnable{
 
 
                 byte[] frame = new byte[ProtocolStack.MAX_MTU_SIZE];
-                byte[] checkSum,bytes,receivedCheckSum;
+                
                 DatagramPacket receivedFrame = new DatagramPacket(frame, frame.length);
                 Frame f = null;
+                Long receivedCheckSum;
+                byte[] frameBytes = null;
+                ObjectOutput out;
+                ByteArrayOutputStream bos;
                 
 
 
@@ -216,7 +206,9 @@ public class LinkLayer implements Runnable{
                      
                     socket.receive(receivedFrame);
 
-                    bytes = receivedFrame.getData();
+                    
+
+                    
                      
                     // Getting the Object from the byte[]
                     ByteArrayInputStream bis = new ByteArrayInputStream(receivedFrame.getData());
@@ -229,9 +221,11 @@ public class LinkLayer implements Runnable{
 
                 } catch(ClassNotFoundException ex) {
                     // The link layer should not fail because some frame is broken
+                    System.err.printf("Corrupted packet!\n");
                     continue;
                 } catch(IOException ex) {
                     // The link layer should not fail because some frame is broken
+                    System.err.printf("Corrupted packet!\n");
                     continue;
                 }
 
@@ -239,39 +233,37 @@ public class LinkLayer implements Runnable{
 
                  
                  
+                 receivedCheckSum = f.getCheckSum();
+              
+                 f.setCheckSum(null);
 
-                 checkSum = new byte[f.getLength()];
-
-                 for(int i = 0; i < f.getLength(); i++)
-                     checkSum[i] = bytes[i];
-
+                  
+            try {
+                 bos = new ByteArrayOutputStream();
+                 out = new ObjectOutputStream(bos);
+                 out.writeObject(f);
+                 frameBytes = bos.toByteArray();
+            } catch (IOException ex) {
+                Logger.getLogger(LinkLayer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+                  
                  
 
                  Checksum checksumEngine = new Adler32();
-                 checksumEngine.update(checkSum, 0, checkSum.length);
-
-                // System.out.printf("%d-----%d\n\n",receivedFrame.getData().length,f.getLength());
+                 checksumEngine.update(frameBytes, 0, frameBytes.length);
 
                  
 
-               //  System.out.printf("%d\n\n",checksumEngine.getValue());
-                 
-
-                 receivedCheckSum = new byte[String.valueOf(checksumEngine.getValue()).getBytes().length];
-
-
-
-                 for(int i = f.getLength(), j = 0; j < receivedCheckSum.length; i++, j++)
-                     receivedCheckSum[j] = bytes[i];
+                
                      
                      
                  
 
 
-               // System.out.printf("111-%d-%d-%s-%s\n",f.getLength(), receivedCheckSum.length,new String(receivedCheckSum),checksumEngine.getValue());
+              
 
 
-                 if(Long.toString(checksumEngine.getValue()).equals(new String(receivedCheckSum)))
+                 if(Long.toString(checksumEngine.getValue()).equals(Long.toString(receivedCheckSum)))
                      deliverToNetworkLayer(f);
                  else
                      System.out.printf("Corrupted packet!\n\n");
@@ -287,7 +279,7 @@ public class LinkLayer implements Runnable{
     private void deliverToNetworkLayer(Frame f) {
         // TODO deliver datagram to network layer
 
-        System.out.printf("Delivering to super layer\n\n");
+        System.out.printf("\n\nMessage received:%s\n\n",f.getS());
     }
 
 }
