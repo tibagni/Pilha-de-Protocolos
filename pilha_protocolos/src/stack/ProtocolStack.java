@@ -12,8 +12,6 @@ import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import pdu.Frame;
 
 /**
@@ -36,21 +34,15 @@ public class ProtocolStack {
     private ExecutorService pool;
 
     public ProtocolStack(String filePath,String logicalID) {
-        graph = new NetworkTopology();
+        graph = NetworkTopology.getInstance();
 
         readFile(filePath,logicalID);
 
-        pool = Executors.newFixedThreadPool(1);
+        pool = Executors.newFixedThreadPool(2);
 
         pool.execute(LinkLayer.getInstance());
-
-        
-
-
-
-
-
-       
+        pool.execute(NetworkLayer.getInstance());
+        pool.shutdown();
     }
 
     public void send()

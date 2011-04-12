@@ -14,11 +14,6 @@ import java.util.HashMap;
 public class Host {
 
     private String logicalID; // Our IP
-
-    // Ou MAC ADDRESS
-    //private String IP;
-   // private String port;
-
     private MAC mac;
 
     // Neighbours <LogicalId, Connection>
@@ -26,21 +21,10 @@ public class Host {
 
     public Host(String lID, String ip, String p) {
         logicalID = lID;
-        //IP = ip;
-        //port = p;
         mac = new MAC(ip,p);
 
         neighbours = new HashMap<String, Connection>();
     }
-
-    /*
-    public String getPort() {
-        return port;
-    }
-
-    public String getIP() {
-        return IP;
-    }*/
 
     public MAC getMAC()
     {

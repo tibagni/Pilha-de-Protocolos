@@ -15,9 +15,16 @@ import stack.ProtocolStack;
 public class NetworkTopology {
 
     private HashMap<String, Host> hosts;
-   
 
-    public NetworkTopology() {
+    private static NetworkTopology networkTopology = null;
+
+    public static NetworkTopology getInstance() {
+        if(networkTopology == null)
+            networkTopology = new NetworkTopology();
+        return networkTopology;
+    }
+
+    private NetworkTopology() {
         hosts = new HashMap<String, Host>();
        
     }
