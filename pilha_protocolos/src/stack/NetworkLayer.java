@@ -50,7 +50,7 @@ public class NetworkLayer implements Runnable {
      * Execute the routing algorithm every 3 minutes
      */
     public void run() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     private class NextHost {

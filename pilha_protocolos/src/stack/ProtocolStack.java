@@ -66,10 +66,12 @@ public class ProtocolStack {
             System.out.printf("What host you want to send a msg?");
 
         
-            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(s.nextInt())),new Frame()))
+            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(2)),new Frame()))
                 System.out.printf("Packet sent!\n\n");
             else
                 System.out.printf("You are not connected to this host or MTU exceeded!\n\n");
+
+            break;
         }
        
 
