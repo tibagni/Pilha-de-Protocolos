@@ -47,8 +47,8 @@ public class Host {
         return false;
     }
 
-    public Connection getLinkMtu(String hostId) {
-        return neighbours.get(hostId);
+    public int getLinkMtu() {
+        return neighbours.get(logicalID).getLinkMtu();
     }
 
     @Override

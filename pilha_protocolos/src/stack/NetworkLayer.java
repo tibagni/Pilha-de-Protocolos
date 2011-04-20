@@ -6,8 +6,11 @@
 package stack;
 
 import graph.Host;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import pdu.Datagram;
 
 /**
  *
@@ -15,11 +18,51 @@ import java.util.HashMap;
  */
 public class NetworkLayer implements Runnable {
 
-    private HashMap<String, NextHost> routingTable = new HashMap<String, NextHost>();
+    private HashMap<String, NextHost> routingTable;
 
     private static NetworkLayer networkLayer = null;
 
-    private NetworkLayer() { }
+    private NetworkLayer() {
+        routingTable = new HashMap<String, NextHost>();
+    }
+
+    /**
+     * Method called by tranport layer to send a message
+     * @param data Transport layer message
+     * @param to IP address of destination
+     * @param protocol Upper layer protocol
+     */
+    public void send(Object data, String to, byte protocol) {
+        // Set source address as localhost
+        String from = ProtocolStack.getLocalhost().getLogicalID();
+
+        // Get next hop from routing table.
+        Host nextHost = getHostInRoutingTable(to);
+        int limit = nextHost.getLinkMtu();
+        Datagram d = new Datagram(from, to, protocol, 4, data);
+
+        // Check to see if datagram is bigger than the limit (MTU)
+        if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_LIMIT) {
+            // TODO fragmentation
+            // Criar um array de datagramas e ir instanciando
+            // de acordo com a necessidade passando id correto
+            // depois chamar o método sendToLinkLayer n vezes
+            //(1 vez para cada datagrama) - de boa...
+            List<Datagram> fragments = new ArrayList<Datagram>();
+            // TODO ...
+            for(Datagram fragment : fragments) {
+                // Send to linkLayer
+                sendToLinkLayer(fragment);
+            }
+        } else {
+            // No fragmentation needed
+            sendToLinkLayer(d);
+        }
+    }
+
+    private void sendToLinkLayer(Datagram d) {
+
+    }
 
     public static NetworkLayer getInstance() {
         if(networkLayer == null)
@@ -27,7 +70,7 @@ public class NetworkLayer implements Runnable {
         return networkLayer;
     }
 
-    public Host getHostInRoutingTable(String ip) {
+    private Host getHostInRoutingTable(String ip) {
         HashMap<String, NextHost> m = (HashMap<String, NextHost>)
                 Collections.synchronizedMap(routingTable);
 
@@ -40,7 +83,7 @@ public class NetworkLayer implements Runnable {
      * @param nh Next host to get to destination
      * @param hops Number of hops to hd
      */
-    public void setHostInRoutingTable(Host hd, Host nh, int hops) {
+    private void setHostInRoutingTable(Host hd, Host nh, int hops) {
         HashMap<String, NextHost> m = (HashMap<String, NextHost>)
                 Collections.synchronizedMap(routingTable);
         m.put(hd.getLogicalID(), new NextHost(nh, hops));

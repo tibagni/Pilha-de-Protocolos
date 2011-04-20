@@ -20,6 +20,27 @@ import pdu.Frame;
  */
 public class ProtocolStack {
 
+    /*
+     * Constants that identify each protocol in stack
+     */
+
+    /**
+     * Network Protocol - similar to IP
+     */
+    public static byte NETWORK_PROTOCOL_NP = 0;
+
+    /**
+     * Reliable Data transfer - similar to TCP
+     */
+    public static byte TRASNPORT_PROTOCOL_RDT = 1;
+
+    /**
+     * Unreliable Data transfer - similar to UDP
+     */
+    public static byte TRASNPORT_PROTOCOL_UDT = 2;
+
+    // TODO other protocol constants (if any)
+
     
     public static final int MAX_MTU_SIZE = 5000;
 
