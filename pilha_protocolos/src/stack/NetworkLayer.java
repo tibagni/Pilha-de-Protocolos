@@ -15,9 +15,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import pdu.Datagram;
+import pdu.Datagram.TTLException;
 import pilha_protocolos.Utilities;
 
 /**
@@ -52,10 +54,14 @@ public class NetworkLayer implements Runnable {
         // Set source address as localhost
         String from = ProtocolStack.getLocalhost().getLogicalID();
 
+        Random r = new Random();
+        Random r2 = new Random(r.nextInt());
+        int datagramId = r.nextInt(r2.nextInt(200)) + r2.nextInt(r.nextInt(100));
+
         // Get next hop from routing table.
         Host nextHost = getHostInRoutingTable(to);
         int limit = nextHost.getLinkMtu();
-        Datagram d = new Datagram(from, to, protocol, 15, 1, data);
+        Datagram d = new Datagram(from, to, protocol, Datagram.TTL, datagramId, data);
 
         // Check to see if datagram is bigger than the limit (MTU)
         if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_LIMIT) {
@@ -67,11 +73,11 @@ public class NetworkLayer implements Runnable {
                 fragId++;
                 byte[] auxBytes = Arrays.copyOfRange(byteData, 0, dataSize);
                 byteData = Arrays.copyOfRange(byteData, dataSize, byteData.length);
-                fragments.add(new Datagram(from, to, protocol, Datagram.TTL, 1, 
+                fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
                        auxBytes, fragId, false));
             }
             // Send last fragment with flag true
-            fragments.add(new Datagram(from, to, protocol, Datagram.TTL, 1,
+            fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
                         byteData, fragId, true));
 
             for(Datagram fragment : fragments) {
@@ -84,9 +90,9 @@ public class NetworkLayer implements Runnable {
         }
     }
 
-    private void sendToLinkLayer(Datagram d) {
+    private synchronized void sendToLinkLayer(Datagram d) {
         byte[] datagram = Utilities.toByteArray(d);
-        Host to = NetworkTopology.getInstance().getHost(d.getDestination());
+        Host to =  getHostInRoutingTable(d.getDestination());
         LinkLayer.getInstance().send(datagram, ProtocolStack.NETWORK_PROTOCOL_NP, to);
     }
 
@@ -125,8 +131,9 @@ public class NetworkLayer implements Runnable {
                             data[j] = tempData[i];
                     }
                     try {
-                        Datagram all = (Datagram) Utilities.toObject(data);
-                        deliverToUpperLayer(all);
+                        deliverToUpperLayer(data);
+                        datagramFragments.remove(datagram.getDatagramId());
+                        fragments = null;
                     } catch(Exception ex) {
                         ex.printStackTrace();
                     }
@@ -154,6 +161,12 @@ public class NetworkLayer implements Runnable {
 
     private void forward(Datagram d) {
         //TODO
+        try {
+            d.decrementTTL();
+            sendToLinkLayer(d);
+        } catch(TTLException ex) {
+
+        }
     }
 
     private void deliverToUpperLayer(Datagram d) {
@@ -170,7 +183,7 @@ public class NetworkLayer implements Runnable {
         return networkLayer;
     }
 
-    private   Host getHostInRoutingTable(String ip) {
+    private Host getHostInRoutingTable(String ip) {
         Map<String, NextHost> m = 
                 Collections.synchronizedMap(routingTable);
 
