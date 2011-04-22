@@ -87,7 +87,7 @@ public class LinkLayer implements Runnable{
         socket.close();
     }
 
-    public boolean sendFrame(Host h,Frame f)
+    public synchronized boolean sendFrame(Host h,Frame f)
     {
         byte[] sendPacket;
         

@@ -6,9 +6,13 @@ package stack;
 
 import graph.NetworkTopology;
 import graph.Host;
+import graph.Host.Connection;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,7 +65,7 @@ public class ProtocolStack {
 
         pool = Executors.newFixedThreadPool(2);
 
-        pool.execute(LinkLayer.getInstance());
+        //pool.execute(LinkLayer.getInstance());
         pool.execute(NetworkLayer.getInstance());
         pool.shutdown();
     }
@@ -114,6 +118,7 @@ public class ProtocolStack {
         return localhost;
     }
 
+
     private void readFile(String path,String logicalID) {
         Scanner in = null;
         String line;
@@ -161,6 +166,11 @@ public class ProtocolStack {
         if (in != null) {
             in.close();
         }
+
+
+
+
+
 
     }
 

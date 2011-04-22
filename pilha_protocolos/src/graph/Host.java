@@ -47,6 +47,11 @@ public class Host {
         return false;
     }
 
+    public HashMap<String,Connection> getNeighbour()
+    {
+        return neighbours;
+    }
+
     public int getLinkMtu() {
         return neighbours.get(logicalID).getLinkMtu();
     }
