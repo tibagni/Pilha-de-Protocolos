@@ -18,8 +18,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import pdu.Frame;
@@ -87,7 +85,12 @@ public class LinkLayer implements Runnable{
         socket.close();
     }
 
-    public synchronized boolean sendFrame(Host h,Frame f)
+    /*package*/ synchronized boolean send(byte[] data, byte protocol, Host h) {
+        Frame frame = new Frame(protocol, data);
+        return sendFrame(h, frame);
+    }
+
+    private boolean sendFrame(Host h, Frame f)
     {
         byte[] sendPacket;
         
@@ -100,13 +103,7 @@ public class LinkLayer implements Runnable{
         if(!localhost.isNeighbour(h.getLogicalID()))
             return false;
 
-
-
         try {
-
-            
-
-
 
             sendPacket  = calculateCheckSum(f);
 
@@ -143,9 +140,6 @@ public class LinkLayer implements Runnable{
          byte[] toSend = null;
          byte[] longSum;
          byte[] aux;
-
-     
-        
 
         try {
            
@@ -281,9 +275,11 @@ public class LinkLayer implements Runnable{
     }
 
     private void deliverToNetworkLayer(Frame f) {
-        // TODO deliver datagram to network layer
-
-        System.out.printf("\n\nMessage received:%s\n\n",f.getS());
+        switch(f.getType()) {
+            case ProtocolStack.NETWORK_PROTOCOL_NP:
+                NetworkLayer.getInstance().receive(f.getData());
+                break;
+        }
     }
 
 }

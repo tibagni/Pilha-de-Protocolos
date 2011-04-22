@@ -31,17 +31,22 @@ public class ProtocolStack {
     /**
      * Network Protocol - similar to IP
      */
-    public static byte NETWORK_PROTOCOL_NP = 0;
+    public static final byte NETWORK_PROTOCOL_NP = 0;
 
     /**
      * Reliable Data transfer - similar to TCP
      */
-    public static byte TRASNPORT_PROTOCOL_RDT = 1;
+    public static final byte TRASNPORT_PROTOCOL_RDT = 1;
 
     /**
      * Unreliable Data transfer - similar to UDP
      */
-    public static byte TRASNPORT_PROTOCOL_UDT = 2;
+    public static final byte TRASNPORT_PROTOCOL_UDT = 2;
+
+    /**
+     * Routing algorithm
+     */
+    public static final byte ROUTING_ALGORITHM = 3;
 
     // TODO other protocol constants (if any)
 
@@ -91,10 +96,10 @@ public class ProtocolStack {
             System.out.printf("What host you want to send a msg?");
 
         
-            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(2)),new Frame()))
-                System.out.printf("Packet sent!\n\n");
-            else
-                System.out.printf("You are not connected to this host or MTU exceeded!\n\n");
+//            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(2)),new Frame()))
+//                System.out.printf("Packet sent!\n\n");
+//            else
+//                System.out.printf("You are not connected to this host or MTU exceeded!\n\n");
 
             break;
         }

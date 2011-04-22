@@ -6,9 +6,7 @@
 package pdu;
 
 
-import graph.MAC;
 import java.io.Serializable;
-import stack.ProtocolStack;
 
 /**
  *
@@ -16,56 +14,21 @@ import stack.ProtocolStack;
  */
 public class Frame implements Serializable {
 
-    private String st;
-    private Long checksum;
-    private int type;
-    private MAC sender;
-    private MAC dest;
-
-    public Frame()
-    {
-        checksum = null;
-        st = "Message sent from host:"+ProtocolStack.getLocalhost().getLogicalID();
-    }
+    private byte type;
+    byte[] data;
     
-    public Frame(int t, Long c, MAC s, MAC d)
+    public Frame(byte t, byte[] data)
     {
-        checksum = c;
         type = t;
-        st = "testando";
-        sender = new MAC(s.getIP(), s.getPort());
-        dest  = new MAC(d.getIP(), d.getPort());
-        
+        this.data = data;
     }
 
-    public Long getCheckSum()
-    {
-        return checksum;
-    }
-
-    public int getType()
+    public byte getType()
     {
         return type;
     }
 
-    public String getS()
-    {
-        return st;
+    public byte[] getData() {
+        return data;
     }
-
-    public MAC getSender()
-    {
-        return sender;
-    }
-
-    public MAC getDestination()
-    {
-        return dest;
-    }
-
-    public void setCheckSum(Long c)
-    {
-        checksum = c;
-    }
-
 }

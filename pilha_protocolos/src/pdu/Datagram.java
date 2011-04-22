@@ -9,28 +9,33 @@ package pdu;
  *
  * @author tiago
  */
-public class Datagram {
+public class Datagram implements Comparable{
+    public static final int MAX_HEADER_SIZE = 20;
+    public static final int TTL = 15;
+
     private String source; // source IP (logical Id)
     private String destination; // destination IP (logical Id)
     private byte upperLayerProtocol; // Witch protocol to deliver
     private int ttl; // Time to live
+    private int datagramId; // Id of datagram
 
     // Fields related to fragmentation
     private int fragmentId; // id of the datagram fragment
     private boolean isLastFragment; // Flag indicating whether is the last fragment or not
 
-    private Object data;
+    private byte[] data;
 
-    public Datagram(String src, String dst, byte ulp, int ttl, Object data) {
-        this(src, dst, ulp, ttl, data, 1, true);
+    public Datagram(String src, String dst, byte ulp, int ttl, int dId, byte[] data) {
+        this(src, dst, ulp, ttl, dId, data, 1, true);
     }
 
-    public Datagram(String src, String dst, byte ulp, int ttl, Object data,
+    public Datagram(String src, String dst, byte ulp, int ttl, int dId, byte[] data,
             int fragId, boolean isLastFrag) {
         source = src;
         destination = dst;
         upperLayerProtocol = ulp;
         this.ttl = ttl;
+        datagramId = dId;
         this.data = data;
         fragmentId = fragId;
         isLastFragment = isLastFrag;
@@ -75,6 +80,14 @@ public class Datagram {
         return fragmentId;
     }
 
+    public int getDatagramId() {
+        return datagramId;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
     public boolean isLastDatagramFragment() {
         return isLastFragment;
     }
@@ -85,6 +98,23 @@ public class Datagram {
 
     public void setLastDatagramFragment(boolean b) {
         isLastFragment = b;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return compareTo(o) == 0 ? true : false;
+    }
+    @Override
+    public int compareTo(Object t) {
+        if(!(t instanceof Datagram)) {
+            return -1;
+        }
+        Datagram d = (Datagram) t;
+        if(this.fragmentId < d.getDatagramFragmentId()) return - 1;
+
+        if(this.fragmentId > d.getDatagramFragmentId()) return  1;
+
+        return 0;
     }
 
     /**

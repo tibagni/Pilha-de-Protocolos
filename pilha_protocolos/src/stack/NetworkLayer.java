@@ -9,6 +9,7 @@ import graph.Host;
 import graph.Host.Connection;
 import graph.NetworkTopology;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import pdu.Datagram;
+import pilha_protocolos.Utilities;
 
 /**
  *
@@ -25,6 +27,7 @@ import pdu.Datagram;
 public class NetworkLayer implements Runnable {
 
     private HashMap<String, NextHost> routingTable;
+    private HashMap<Integer, ArrayList<Datagram>> datagramFragments;
 
     private static NetworkLayer networkLayer = null;
 
@@ -36,6 +39,7 @@ public class NetworkLayer implements Runnable {
     private NetworkLayer() {
         routingTable = new HashMap<String, NextHost>();
         routing = new Routing();
+        datagramFragments = new HashMap<Integer, ArrayList<Datagram>>();
     }
 
     /**
@@ -44,24 +48,32 @@ public class NetworkLayer implements Runnable {
      * @param to IP address of destination
      * @param protocol Upper layer protocol
      */
-    public void send(Object data, String to, byte protocol) {
+    public synchronized void send(byte[] data, String to, byte protocol) {
         // Set source address as localhost
         String from = ProtocolStack.getLocalhost().getLogicalID();
 
         // Get next hop from routing table.
         Host nextHost = getHostInRoutingTable(to);
         int limit = nextHost.getLinkMtu();
-        Datagram d = new Datagram(from, to, protocol, 4, data);
+        Datagram d = new Datagram(from, to, protocol, 15, 1, data);
 
         // Check to see if datagram is bigger than the limit (MTU)
         if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_LIMIT) {
-            // TODO fragmentation
-            // Criar um array de datagramas e ir instanciando
-            // de acordo com a necessidade passando id correto
-            // depois chamar o método sendToLinkLayer n vezes
-            //(1 vez para cada datagrama) - de boa...
             List<Datagram> fragments = new ArrayList<Datagram>();
-            // TODO ...
+            byte[] byteData = data;
+            int dataSize = limit - Datagram.MAX_HEADER_SIZE - LinkLayer.ADLER_LIMIT;
+            int fragId = 0;
+            while(byteData.length > dataSize) {
+                fragId++;
+                byte[] auxBytes = Arrays.copyOfRange(byteData, 0, dataSize);
+                byteData = Arrays.copyOfRange(byteData, dataSize, byteData.length);
+                fragments.add(new Datagram(from, to, protocol, Datagram.TTL, 1, 
+                       auxBytes, fragId, false));
+            }
+            // Send last fragment with flag true
+            fragments.add(new Datagram(from, to, protocol, Datagram.TTL, 1,
+                        byteData, fragId, true));
+
             for(Datagram fragment : fragments) {
                 // Send to linkLayer
                 sendToLinkLayer(fragment);
@@ -72,7 +84,83 @@ public class NetworkLayer implements Runnable {
         }
     }
 
-    private synchronized void sendToLinkLayer(Datagram d) {
+    private void sendToLinkLayer(Datagram d) {
+        byte[] datagram = Utilities.toByteArray(d);
+        Host to = NetworkTopology.getInstance().getHost(d.getDestination());
+        LinkLayer.getInstance().send(datagram, ProtocolStack.NETWORK_PROTOCOL_NP, to);
+    }
+
+    /*package*/ void receive(byte[] datagramBytes) {
+        try {
+            Datagram datagram = (Datagram) Utilities.toObject(datagramBytes);
+            // Se o destino não for localhost, repassa
+            if(!datagram.getDestination().equals(ProtocolStack.getLocalhost().getLogicalID())) {
+                forward(datagram);
+                return;
+            }
+            // Not fragmented
+            if(datagram.isLastDatagramFragment() && datagram.getDatagramFragmentId() == 1) {
+                deliverToUpperLayer(datagram);
+            } else {
+                List<Datagram> fragments = addToFragmentsList(datagram);
+                Collections.sort(fragments);
+                
+                // Check to see if list is complete (all fragments)
+                int fragId = 1;
+                int dataSize = 0;
+                boolean completed = false;
+                for(Datagram d : fragments) {
+                    if(d.getDatagramFragmentId() != fragId)
+                        return;
+                    if(d.isLastDatagramFragment()) completed = true;
+                    dataSize += d.getData().length;
+                    fragId++;
+                }
+                byte[] data = new byte[dataSize];
+                if(completed) {
+                    int j = 0;
+                    for(Datagram d : fragments) {
+                        byte[] tempData = d.getData();
+                        for(int i = 0; i < tempData.length; i++, j++)
+                            data[j] = tempData[i];
+                    }
+                    try {
+                        Datagram all = (Datagram) Utilities.toObject(data);
+                        deliverToUpperLayer(all);
+                    } catch(Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+
+        } catch(Exception ex) {
+            //Fodeu!!!
+            ex.printStackTrace();
+        }
+    }
+
+    private List<Datagram> addToFragmentsList(Datagram datagram) {
+        ArrayList<Datagram> fragments = datagramFragments.get(datagram.getDatagramId());
+        if(fragments == null) {
+            fragments = new ArrayList<Datagram>();
+            datagramFragments.put(datagram.getDatagramId(), fragments);
+        }
+        // Discard duplicated datagrams
+        if(!fragments.contains(datagram))
+            fragments.add(datagram);
+
+        return fragments;
+    }
+
+    private void forward(Datagram d) {
+        //TODO
+    }
+
+    private void deliverToUpperLayer(Datagram d) {
+        deliverToUpperLayer(d.getData());
+    }
+
+    private void deliverToUpperLayer(byte[] data) {
 
     }
 
@@ -128,10 +216,6 @@ public class NetworkLayer implements Runnable {
      * Execute the routing algorithm every 3 minutes
      */
     public void run() {
-        //throw new UnsupportedOperationException("Not supported yet.");
-
-        
-
 
         while(true)
         {
@@ -143,11 +227,6 @@ public class NetworkLayer implements Runnable {
                 System.err.printf("%s\n",routingTable);
 
                 routing.start();
-                
-
-
-
-
 
             } catch (InterruptedException ex) {
                 Logger.getLogger(NetworkLayer.class.getName()).log(Level.SEVERE, null, ex);
@@ -185,9 +264,6 @@ public class NetworkLayer implements Runnable {
     private  class Routing 
     {
 
-
-
-
         public void start()
         {
                 synchronized(lock)
@@ -210,9 +286,6 @@ public class NetworkLayer implements Runnable {
 
                     //PROPAGAR
                     sendDistanceVector(distanceVector);
-
-
-
 
             }
         }
