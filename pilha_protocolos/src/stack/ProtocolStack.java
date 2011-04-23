@@ -6,17 +6,12 @@ package stack;
 
 import graph.NetworkTopology;
 import graph.Host;
-import graph.Host.Connection;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import pdu.Frame;
 
 /**
  *
@@ -47,8 +42,16 @@ public class ProtocolStack {
      * Routing algorithm
      */
     public static final byte ROUTING_ALGORITHM = 3;
+    
+    /**
+     * Ping request packet
+     */
+    public static final byte ICMP_REQUEST = 6;
 
-    // TODO other protocol constants (if any)
+    /**
+     * Ping replay packet
+     */
+    public static final byte ICMP_REPLAY = 5;
 
     
     public static final int MAX_MTU_SIZE = 5000;
@@ -70,7 +73,7 @@ public class ProtocolStack {
 
         pool = Executors.newFixedThreadPool(2);
 
-        //pool.execute(LinkLayer.getInstance());
+        pool.execute(LinkLayer.getInstance());
         pool.execute(NetworkLayer.getInstance());
         pool.shutdown();
     }
@@ -92,16 +95,18 @@ public class ProtocolStack {
             }
             i = 1;
 
+            if(getLocalhost().getLogicalID().equals("1")) {
+                System.out.printf("What host you want to send a msg?");
+                try {
+                    Thread.sleep(60000);
+                } catch(InterruptedException ex) {
+                   // Logger.getLogger(ProtocolStack.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                NetworkLayer.getInstance().send(new String("vai toma no cu").getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
+                    System.out.printf("Packet sent!\n\n");
+            }
 
-            System.out.printf("What host you want to send a msg?");
-
-        
-//            if(LinkLayer.getInstance().sendFrame(graph.getHost(Integer.toString(2)),new Frame()))
-//                System.out.printf("Packet sent!\n\n");
-//            else
-//                System.out.printf("You are not connected to this host or MTU exceeded!\n\n");
-
-            break;
+           // break;
         }
        
 

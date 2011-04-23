@@ -18,10 +18,7 @@ public class Main {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-
-        // TODO store the Logical ID from command-line
-        
+    public static void main(String[] args) {        
 
         if(args.length == 0 || args.length > 2 || args.length == 1)
         {
@@ -33,7 +30,7 @@ public class Main {
          */
         ProtocolStack s = new ProtocolStack(args[0],args[1]);
 
-       // s.send();
+        s.send();
 
 
     }

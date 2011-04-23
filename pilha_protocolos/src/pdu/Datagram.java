@@ -5,13 +5,16 @@
 
 package pdu;
 
+import java.io.Serializable;
+
 /**
  *
  * @author tiago
  */
-public class Datagram implements Comparable{
-    public static final int MAX_HEADER_SIZE = 20;
+public class Datagram implements Comparable, Serializable {
+    public static final int MAX_HEADER_SIZE = 25;
     public static final int TTL = 15;
+    public static int NONE = -1;
 
     private String source; // source IP (logical Id)
     private String destination; // destination IP (logical Id)
@@ -100,10 +103,13 @@ public class Datagram implements Comparable{
         isLastFragment = b;
     }
 
+    // Consider only the fragment Id
     @Override
     public boolean equals(Object o) {
         return compareTo(o) == 0 ? true : false;
     }
+
+    // Consider only the fragment Id
     @Override
     public int compareTo(Object t) {
         if(!(t instanceof Datagram)) {

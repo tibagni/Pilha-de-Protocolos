@@ -5,13 +5,14 @@
 package graph;
 
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
  *
  * @author belitos
  */
-public class Host {
+public class Host implements Serializable {
 
     private String logicalID; // Our IP
     private MAC mac;

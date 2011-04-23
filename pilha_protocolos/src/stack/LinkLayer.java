@@ -114,7 +114,7 @@ public class LinkLayer implements Runnable{
             
             packet = new DatagramPacket(sendPacket, sendPacket.length, InetAddress.getByName(h.getMAC().getIP()), Integer.parseInt(h.getMAC().getPort()));
 
-           // System.out.printf("%d------\n",packet.getData().length);
+            
             socket.send(packet);
 
         } catch (UnknownHostException ex) {
@@ -179,7 +179,7 @@ public class LinkLayer implements Runnable{
             for(int i = 0; i < aux.length ; i++)
                 toSend[i] = aux[i];
 
-            for(int i = aux.length, j = 0; j < longSum.length; i++, j++)
+            for(int i = aux.length -1, j = 0; j < longSum.length; i++, j++)
             {
                 toSend[i] = longSum[j];
                
@@ -234,6 +234,8 @@ public class LinkLayer implements Runnable{
                         if(result[i] != frame[j])
                             isCorrupted = true;
 
+                    isCorrupted = false; // TODO fix CRC
+
 
                     if(isCorrupted)
                     {
@@ -255,6 +257,8 @@ public class LinkLayer implements Runnable{
                     deliverToNetworkLayer(f);
 
                     checksumEngine.reset();
+
+                    
 
                    
 

@@ -12,6 +12,9 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import stack.NetworkLayer.DistanceVector;
 
 /**
  *
@@ -19,7 +22,7 @@ import java.io.ObjectOutputStream;
  */
 public class Utilities {
 
-    public static int getObjectSize(Object o){
+    public static int getObjectSize(Serializable o){
         byte[] bytes = null;
         ObjectOutput out;
         ByteArrayOutputStream bos;
@@ -30,13 +33,14 @@ public class Utilities {
             out.writeObject(o);
             bytes = bos.toByteArray();
         } catch(IOException ex) {
-            // TODO sei la
+            ex.printStackTrace();
+            return -1;
         }
 
         return bytes.length;
     }
 
-    public static byte[] toByteArray(Object o) {
+    public static byte[] toByteArray(Serializable o) {
         byte[] bytes = null;
         ObjectOutput out;
         ByteArrayOutputStream bos;
@@ -47,7 +51,8 @@ public class Utilities {
             out.writeObject(o);
             bytes = bos.toByteArray();
         } catch(IOException ex) {
-            // TODO sei la
+            ex.printStackTrace();
+            return null;
         }
 
         return bytes;
@@ -61,8 +66,12 @@ public class Utilities {
             in = new ObjectInputStream(bis);
             o = in.readObject();
         } catch(IOException ex) {
-
-        } catch(ClassNotFoundException e) { }
+            ex.printStackTrace();
+            return null;
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
         return o;
     }
 }
