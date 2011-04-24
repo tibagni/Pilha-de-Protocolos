@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import pilha_protocolos.Utilities;
 
 /**
  *
@@ -86,24 +87,23 @@ public class ProtocolStack {
 
         while(true)
         {
-            System.out.printf("--Current topology--\n");
+            Utilities.log(Utilities.PROTOCOL_STACK_TAG, "--Current topology--\n");
 
             while((h = graph.getHost(Integer.toString(i))) != null)
             {
-                System.out.printf("ID:%s\tIP:%s\tPort:%s\n\n",h.getLogicalID(),h.getMAC().getIP(),h.getMAC().getPort());
+                Utilities.log(Utilities.PROTOCOL_STACK_TAG, "ID:%s\tIP:%s\tPort:%s\n\n",
+                        h.getLogicalID(),h.getMAC().getIP(),h.getMAC().getPort());
                 i++;
             }
             i = 1;
 
             if(getLocalhost().getLogicalID().equals("1")) {
-                System.out.printf("What host you want to send a msg?");
                 try {
                     Thread.sleep(60000);
-                } catch(InterruptedException ex) {
-                   // Logger.getLogger(ProtocolStack.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                } catch(InterruptedException ex) { }
+                
                 NetworkLayer.getInstance().send(new String("vai toma no cu").getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
-                    System.out.printf("Packet sent!\n\n");
+                    Utilities.log(Utilities.PROTOCOL_STACK_TAG, "Packet sent!\n\n");
             }
 
            // break;
@@ -138,7 +138,7 @@ public class ProtocolStack {
         try {
             in = new Scanner(new File(path));
         } catch (FileNotFoundException ex) {
-            System.err.printf("File not found!\n\n");
+            Utilities.printError("File not found!\n\n");
             System.exit(1);
 
         }
@@ -176,11 +176,6 @@ public class ProtocolStack {
         if (in != null) {
             in.close();
         }
-
-
-
-
-
 
     }
 

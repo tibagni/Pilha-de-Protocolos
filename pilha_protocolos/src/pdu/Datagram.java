@@ -16,15 +16,15 @@ public class Datagram implements Comparable, Serializable {
     public static final int TTL = 15;
     public static int NONE = -1;
 
-    private String source; // source IP (logical Id)
-    private String destination; // destination IP (logical Id)
-    private byte upperLayerProtocol; // Witch protocol to deliver
-    private int ttl; // Time to live
-    private int datagramId; // Id of datagram
+    private String source; // IP origem (logical Id)
+    private String destination; // IP destino (logical Id)
+    private byte upperLayerProtocol; // Protocolo da camada superior
+    private int ttl; // Time to live (tempo de vida, numero de hops)
+    private int datagramId; // Id do datagrama
 
-    // Fields related to fragmentation
-    private int fragmentId; // id of the datagram fragment
-    private boolean isLastFragment; // Flag indicating whether is the last fragment or not
+    // Fragmentacao
+    private int fragmentId; // id do fragmento do datagrama
+    private boolean isLastFragment; // Flag indicando se e o utltimo
 
     private byte[] data;
 
@@ -46,7 +46,7 @@ public class Datagram implements Comparable, Serializable {
     }
 
     /**
-     * Decrement TTL or throw an exception indicating you must discard the packet
+     * Decrementa TTL ou lanca uma execao indicando que o pacote deve ser descartado
      * @throws pdu.Datagram.TTLException
      */
     public void decrementTTL() throws TTLException{
@@ -55,18 +55,10 @@ public class Datagram implements Comparable, Serializable {
         } else throw new TTLException();
     }
 
-    /**
-     * Get TTL value
-     * @return current ttl
-     */
     public int getTTL() {
         return ttl;
     }
 
-    /**
-     * retrieves witch protocol to deliver the data
-     * @return upperLayerProtocol
-     */
     public byte getUpperLayerProtocol() {
         return upperLayerProtocol;
     }
@@ -103,13 +95,13 @@ public class Datagram implements Comparable, Serializable {
         isLastFragment = b;
     }
 
-    // Consider only the fragment Id
+    // Compara apenas o id do fragmento (nao e preciso mais do que isto)
     @Override
     public boolean equals(Object o) {
         return compareTo(o) == 0 ? true : false;
     }
 
-    // Consider only the fragment Id
+    // Compara apenas o id do fragmento (nao e preciso mais do que isto)
     @Override
     public int compareTo(Object t) {
         if(!(t instanceof Datagram)) {
@@ -124,7 +116,7 @@ public class Datagram implements Comparable, Serializable {
     }
 
     /**
-     * Exception throwed when the packet should be discarded
+     * Execao que indica que o datagrama deve ser descartado
      */
     public static class TTLException extends Exception {
         public TTLException(String s) {

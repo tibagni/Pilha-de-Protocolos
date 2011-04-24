@@ -27,7 +27,7 @@ import pilha_protocolos.Utilities;
  *
  * @author tiago
  */
-public class NetworkLayer implements Runnable, Serializable{
+public class NetworkLayer implements Runnable, Serializable {
 
     private HashMap<String, NextHost> routingTable;
     private HashMap<Integer, ArrayList<Datagram>> datagramFragments;
@@ -50,7 +50,9 @@ public class NetworkLayer implements Runnable, Serializable{
     }
 
     /**
-     * Method called by tranport layer to send a message with random datagram id
+     * Chamado pela camada de transporte, cria um datagrama (fragmenta)
+     * e envia para camada de enlace
+     *
      * @param data Transport layer message
      * @param to IP address of destination
      * @param protocol Upper layer protocol
@@ -62,14 +64,15 @@ public class NetworkLayer implements Runnable, Serializable{
     }
 
     /**
-     * Method called by tranport layer to send a message with specified datagram id
+     * Cria e envia um datagrama com um id de datagrama já especificado
+     *
      * @param data Transport layer message
      * @param to IP address of destination
      * @param protocol Upper layer protocol
      * @param datagramId Datagram id, if NONE will be random
      * @param from Source ip (usually localhost)
      */
-    public synchronized void send(byte[] data, String to, byte protocol,
+    private synchronized void send(byte[] data, String to, byte protocol,
             int datagramId, String from) {
 
         if(datagramId == Datagram.NONE) {
@@ -78,13 +81,13 @@ public class NetworkLayer implements Runnable, Serializable{
             datagramId = r.nextInt() + r2.nextInt();
         }
 
-        // Get next hop from routing table.
+        // Pega next hop da routing table.
         Host nextHost = getHostInRoutingTable(to);
         if(nextHost == null) return;
         int limit = 5000; //nextHost.getLinkMtu();
         Datagram d = new Datagram(from, to, protocol, Datagram.TTL, datagramId, data);
 
-        // Check to see if datagram is bigger than the limit (MTU)
+        // Verifica se datagrama e maior que limit (MTU)
         if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_LIMIT) {
             List<Datagram> fragments = new ArrayList<Datagram>();
             byte[] byteData = data;
@@ -97,16 +100,16 @@ public class NetworkLayer implements Runnable, Serializable{
                 fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
                        auxBytes, fragId, false));
             }
-            // Send last fragment with flag true
+            // Adiciona ultimo fragmento na lista com a flag isLast setada para true
             fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
                         byteData, fragId, true));
 
             for(Datagram fragment : fragments) {
-                // Send to linkLayer
+                // Send to linkLayer - envia para camada de enlace
                 sendToLinkLayer(fragment, nextHost);
             }
         } else {
-            // No fragmentation needed
+            // nao e necessario fragmentar datagrama
             sendToLinkLayer(d, nextHost);
         }
     }
@@ -119,19 +122,19 @@ public class NetworkLayer implements Runnable, Serializable{
     /*package*/ void receive(byte[] datagramBytes) {
         try {
             Datagram datagram = (Datagram) Utilities.toObject(datagramBytes);
-            // forward the packet if it's destination address isn't localhost
+            // Se ip destino nao e o memso que localhost (pacote não é para este host), roteia
             if(!datagram.getDestination().equals(ProtocolStack.getLocalhost().getLogicalID())) {
                 forward(datagram);
                 return;
             }
-            // Not fragmented, just deliver to upper layer
+            // Datagrama nao fragmentado, entrega pra camada superior
             if(datagram.isLastDatagramFragment() && datagram.getDatagramFragmentId() == 1) {
                 deliverToUpperLayer(datagram);
             } else {
                 List<Datagram> fragments = addToFragmentsList(datagram);
                 Collections.sort(fragments);
                 
-                // Check to see if list is complete (all fragments)
+                // Verifica se lista de fragmentos esta completa (all fragments)
                 int fragId = 1;
                 int dataSize = 0;
                 boolean completed = false;
@@ -173,7 +176,7 @@ public class NetworkLayer implements Runnable, Serializable{
             fragments = new ArrayList<Datagram>();
             datagramFragments.put(datagram.getDatagramId(), fragments);
         }
-        // Discard duplicated datagrams
+        // Ignora datagramas duplicados
         if(!fragments.contains(datagram))
             fragments.add(datagram);
 
@@ -183,12 +186,12 @@ public class NetworkLayer implements Runnable, Serializable{
     private void forward(Datagram d) {
         try {
             d.decrementTTL();
-            // Just forward the datagram mantaining the DatagramId and source IP
-            // (just the end host should handle the fragmentation)
+            // Repassa o datagrama mantendo ID e IP de origem (age como roteador)
+            // (o host final deve lidar com a fragmentacao)
             send(d.getData(), d.getDestination(), d.getUpperLayerProtocol(), 
                     d.getDatagramId(), d.getSource());
         } catch(TTLException ex) {
-            // TTL is 0, the packet must be discarded now!
+            // TTL 0, o pacote sera descartado
         }
     }
 
@@ -197,26 +200,27 @@ public class NetworkLayer implements Runnable, Serializable{
 
         switch(datagram.getUpperLayerProtocol()) {
             case ProtocolStack.TRASNPORT_PROTOCOL_RDT:
-                System.out.println("recebi filho da poata");
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem RDT recebida");
                 break;
             case ProtocolStack.TRASNPORT_PROTOCOL_UDT:
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem UDT recebida");
                 break;
             case ProtocolStack.ROUTING_ALGORITHM:
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem do algoritmo de roteamento recebida");
                 ArrayList<DistanceVector> distanceVector =
                         (ArrayList<DistanceVector>)Utilities.toObject(datagram.getData());
-                
                 routing.recalculate(distanceVector, datagram.getSource());
                 break;
             case ProtocolStack.ICMP_REQUEST:
-                // Send replay
-                System.out.println("received request");
+                // Manda ICMP replay
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP request recebida, enviando replay...");
                 Host h = NetworkTopology.getInstance().getHost(datagram.getSource());
                 setHostInRoutingTable(h, h, 1);
                 send(new String("icmp replay").getBytes(), datagram.getSource(), ProtocolStack.ICMP_REPLAY);
                 break;
             case ProtocolStack.ICMP_REPLAY:
-                // Set sender host as alive
-                System.out.println("received reply");
+                // Ping respondido com sucesso, host conectado (online)
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP replay recebida");
                 alive.add(NetworkTopology.getInstance().getHost(datagram.getSource()));
                 break;
         }
@@ -251,11 +255,11 @@ public class NetworkLayer implements Runnable, Serializable{
     }
 
     /**
-     * Set a host in routing table
+     * Adiciona host na routing table
      * @param hd Destination  host (final)
-     * @param nh Next host to get to destination
+     * @param nh Next hop
      * @param hops Number of hops to hd
-     * @return if the operation was completed
+     * @return Se foi inserido com sucesso
      */
     public boolean setHostInRoutingTable(Host hd, Host nh, int hops)
     {
@@ -280,17 +284,21 @@ public class NetworkLayer implements Runnable, Serializable{
     }
 
     /**
-     * Execute the routing algorithm every 3 minutes
+     * Roda o algoritmo de roteamento
      */
     public void run() {
 
         while(true)
         {
             try {
+                // Verifica se os vizinhos estao conectados
                 routing.checkAlive();
                 Thread.sleep(PING_TIME);
+
                 routing.start();
-                System.out.printf("depois do start %s\n %s\n",routingTable, ProtocolStack.getLocalhost());
+                // loga a routing table
+                Utilities.log(Utilities.NETWORK_TAG, "%s\n %s\n",routingTable, ProtocolStack.getLocalhost());
+                
                 Thread.sleep(FREEZE_TIME);
 
             } catch (InterruptedException ex) {
@@ -352,7 +360,7 @@ public class NetworkLayer implements Runnable, Serializable{
         {
                 synchronized(lock)
                 {
-                    // Reset Routing table
+                    // Limpa Routing table
                     routingTable.clear();
                     ArrayList<DistanceVector> distanceVector = new ArrayList<DistanceVector>();
 
@@ -388,7 +396,7 @@ public class NetworkLayer implements Runnable, Serializable{
 
                 sendDistanceVector(myArray);
 
-                System.out.printf("%s\n",routingTable);
+                Utilities.log(Utilities.NETWORK_TAG, "%s\n",routingTable);
             }
         }
     }

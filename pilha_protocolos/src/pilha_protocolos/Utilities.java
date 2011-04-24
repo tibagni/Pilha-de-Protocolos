@@ -13,14 +13,29 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import stack.NetworkLayer.DistanceVector;
 
 /**
  *
  * @author tiago
  */
 public class Utilities {
+    
+    // ativar logs (true)
+    private static final boolean LOG = true;
+    
+    // ativar prints (true)
+    private static final boolean PRINT = true;
+
+    // LOG tags
+    public static final String LINK_TAG = "LinkLayer";
+    public static final String NETWORK_TAG = "NetworkLayer";
+    public static final String TRANSPORT_TAG = "TransportLayer";
+    public static final String PROTOCOL_STACK_TAG = "ProtocolStack";
+
+    // FILTER (Mude o filtro antes da compilacao)
+    // NO_FILTER imprime todos os logs (se LOG == true)
+    private static final String NO_FILTER = "no_filter";
+    private static final String FILTER = NO_FILTER;
 
     public static int getObjectSize(Serializable o){
         byte[] bytes = null;
@@ -73,5 +88,26 @@ public class Utilities {
             return null;
         }
         return o;
+    }
+
+    public static void print(String s, Object... args) {
+        if(PRINT) {
+            System.out.printf("PRINT: " + s, args);
+            System.out.println();
+        }
+    }
+
+    public static void printError(String s, Object... args) {
+        System.err.printf("ERROR: " + s, args);
+        System.out.println();
+    }
+
+    public static void log(String tag, String message, Object... args) {
+        if(LOG) {
+            if(FILTER.equals(NO_FILTER) || FILTER.equals(tag)) {
+                System.out.printf("LOG: " + tag + ": " + message, args);
+                System.out.println();
+            }
+        }
     }
 }

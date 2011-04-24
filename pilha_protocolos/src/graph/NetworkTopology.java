@@ -41,7 +41,7 @@ public class NetworkTopology {
     public void addConnection(Host n1, Host n2, int mtu) {
         Host localhost = ProtocolStack.getLocalhost();
 
-        // At first we only need to store the neighbours
+        // No comeco, so armazena os vizinhos
         if(n1.getLogicalID().equals(localhost.getLogicalID())) {
             localhost.addNeighbour(n2, mtu);
             

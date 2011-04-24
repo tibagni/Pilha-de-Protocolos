@@ -22,9 +22,7 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import pdu.Frame;
 import pilha_protocolos.GarbledDatagramSocket;
-
-
-
+import pilha_protocolos.Utilities;
 
 /**
  *
@@ -51,11 +49,11 @@ public class LinkLayer implements Runnable{
         try {
             socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),0,0,0);
         } catch(SocketException ex) {
-            System.err.printf("Error creating DatagramSocket!(SocketException)\n\n");
+            Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
         } catch(IOException ioEx)
         {
-             System.err.printf("Error creating DatagramSocket!(IOException)\n\n");
+             Utilities.printError("Error creating DatagramSocket!(IOException)\n\n");
              System.exit(1);
         }
 
@@ -118,10 +116,10 @@ public class LinkLayer implements Runnable{
             socket.send(packet);
 
         } catch (UnknownHostException ex) {
-            System.err.printf("UnkownHostException - send packet!\n\n");
+            Utilities.printError("UnkownHostException - send packet!\n\n");
             System.exit(1);
         } catch (IOException ex) {
-            System.err.printf("IOException - send packet!\n\n");
+            Utilities.printError("IOException - send packet!\n\n");
             System.exit(1);
         }
 
@@ -186,7 +184,7 @@ public class LinkLayer implements Runnable{
             }
 
         } catch (IOException ex) {
-            System.err.printf("IOException - checksum!\n\n");
+            Utilities.printError("IOException - checksum!\n\n");
             System.exit(1);
         }
 
@@ -198,13 +196,9 @@ public class LinkLayer implements Runnable{
      * Create a server datagram socket to listento the link
      */
     private void receiveFrames() {
-        
-        
 
         // Always waiting for a frame
         while(true) {
-
-
                 byte[] frame = new byte[ProtocolStack.MAX_MTU_SIZE];
                 DatagramPacket receivedFrame = new DatagramPacket(frame, frame.length);
                 Frame f = null;
@@ -212,16 +206,11 @@ public class LinkLayer implements Runnable{
                 byte[] data;
                 boolean isCorrupted;
 
-
                 try {
                      
                     socket.receive(receivedFrame);
                     frame = receivedFrame.getData();
 
-
-                   
-
-                    
                     checksumEngine.update(frame, 0, ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT);
                     
 
@@ -239,7 +228,7 @@ public class LinkLayer implements Runnable{
 
                     if(isCorrupted)
                     {
-                        System.err.printf("Corrupted!\n");
+                        Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                         continue;
                     }
 
@@ -264,17 +253,16 @@ public class LinkLayer implements Runnable{
 
                 } catch(ClassNotFoundException ex) {
                     // The link layer should not fail because some frame is broken
-                    System.err.printf("Corrupted packet!\n");
+                    Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                     continue;
                 } catch(IOException ex) {
                     // The link layer should not fail because some frame is broken
-                    System.err.printf("Corrupted packet!\n");
+                    Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                     continue;
                 }
 
                  
             }
-
         
     }
 

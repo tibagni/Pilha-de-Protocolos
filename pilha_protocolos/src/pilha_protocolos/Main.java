@@ -22,7 +22,8 @@ public class Main {
 
         if(args.length == 0 || args.length > 2 || args.length == 1)
         {
-            System.err.printf("First argument is the location of cnf file, second the logical ID of the host!\n\n");
+            Utilities.printError("First argument is the location of cnf file, " +
+                    "second the logical ID of the host!\n\n");
             System.exit(1);
         }
         /*
