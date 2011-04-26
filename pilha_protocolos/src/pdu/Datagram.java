@@ -23,24 +23,24 @@ public class Datagram implements Comparable, Serializable {
     private int datagramId; // Id do datagrama
 
     // Fragmentacao
-    private int fragmentId; // id do fragmento do datagrama
+    private int offset; // offset do inicio do fragmento
     private boolean isLastFragment; // Flag indicando se e o utltimo
 
     private byte[] data;
 
     public Datagram(String src, String dst, byte ulp, int ttl, int dId, byte[] data) {
-        this(src, dst, ulp, ttl, dId, data, 1, true);
+        this(src, dst, ulp, ttl, dId, data, 0, true);
     }
 
     public Datagram(String src, String dst, byte ulp, int ttl, int dId, byte[] data,
-            int fragId, boolean isLastFrag) {
+            int offset, boolean isLastFrag) {
         source = src;
         destination = dst;
         upperLayerProtocol = ulp;
         this.ttl = ttl;
         datagramId = dId;
         this.data = data;
-        fragmentId = fragId;
+        this.offset = offset;
         isLastFragment = isLastFrag;
 
     }
@@ -71,8 +71,8 @@ public class Datagram implements Comparable, Serializable {
         return destination;
     }
 
-    public int getDatagramFragmentId() {
-        return fragmentId;
+    public int getOffset() {
+        return offset;
     }
 
     public int getDatagramId() {
@@ -88,7 +88,7 @@ public class Datagram implements Comparable, Serializable {
     }
 
     public void setDatagramFragmentId(int id) {
-        fragmentId = id;
+        offset = id;
     }
 
     public void setLastDatagramFragment(boolean b) {
@@ -108,9 +108,9 @@ public class Datagram implements Comparable, Serializable {
             return -1;
         }
         Datagram d = (Datagram) t;
-        if(this.fragmentId < d.getDatagramFragmentId()) return - 1;
+        if(this.offset < d.getOffset()) return - 1;
 
-        if(this.fragmentId > d.getDatagramFragmentId()) return  1;
+        if(this.offset > d.getOffset()) return  1;
 
         return 0;
     }

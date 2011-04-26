@@ -7,6 +7,7 @@ package graph;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import pilha_protocolos.Utilities;
 
 /**
  *
@@ -53,8 +54,8 @@ public class Host implements Serializable {
         return neighbours;
     }
 
-    public int getLinkMtu() {
-        return neighbours.get(logicalID).getLinkMtu();
+    public int getLinkMtu(String dst) {
+        return neighbours.get(dst).getLinkMtu();
     }
 
     @Override
@@ -91,7 +92,11 @@ public class Host implements Serializable {
         public int getLinkMtu() {
             return mtu;
         }
-    }
 
-    
+        @Override
+        public String toString()
+        {
+            return host.toString() + " - " + mtu;
+        }
+    }
 }

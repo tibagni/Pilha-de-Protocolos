@@ -60,7 +60,7 @@ public class NetworkLayer implements Runnable, Serializable {
     public synchronized void send(byte[] data, String to, byte protocol) {
         // Set source address as localhost
         String from = ProtocolStack.getLocalhost().getLogicalID();
-        send(data, to, protocol, Datagram.NONE, from);
+        send(data, to, protocol, Datagram.NONE, from, 0);
     }
 
     /**
@@ -73,7 +73,7 @@ public class NetworkLayer implements Runnable, Serializable {
      * @param from Source ip (usually localhost)
      */
     private synchronized void send(byte[] data, String to, byte protocol,
-            int datagramId, String from) {
+            int datagramId, String from, int offset) {
 
         if(datagramId == Datagram.NONE) {
             Random r = new Random();
@@ -84,7 +84,7 @@ public class NetworkLayer implements Runnable, Serializable {
         // Pega next hop da routing table.
         Host nextHost = getHostInRoutingTable(to);
         if(nextHost == null) return;
-        int limit = 5000; //nextHost.getLinkMtu();
+        int limit = ProtocolStack.getLocalhost().getLinkMtu(nextHost.getLogicalID());
         Datagram d = new Datagram(from, to, protocol, Datagram.TTL, datagramId, data);
 
         // Verifica se datagrama e maior que limit (MTU)
@@ -92,19 +92,22 @@ public class NetworkLayer implements Runnable, Serializable {
             List<Datagram> fragments = new ArrayList<Datagram>();
             byte[] byteData = data;
             int dataSize = limit - Datagram.MAX_HEADER_SIZE - LinkLayer.ADLER_LIMIT;
-            int fragId = 0;
+            int fragOffset = offset;
             while(byteData.length > dataSize) {
-                fragId++;
+                Utilities.log(Utilities.NETWORK_TAG, "Fragmento criado: %d", fragOffset);
                 byte[] auxBytes = Arrays.copyOfRange(byteData, 0, dataSize);
                 byteData = Arrays.copyOfRange(byteData, dataSize, byteData.length);
                 fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
-                       auxBytes, fragId, false));
+                       auxBytes, fragOffset, false));
+                fragOffset += auxBytes.length;
             }
             // Adiciona ultimo fragmento na lista com a flag isLast setada para true
             fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
-                        byteData, fragId, true));
+                        byteData, (fragOffset), true));
 
             for(Datagram fragment : fragments) {
+                Utilities.log(Utilities.NETWORK_TAG, "Enviando fragmento %d para camada de enlace",
+                        fragment.getOffset());
                 // Send to linkLayer - envia para camada de enlace
                 sendToLinkLayer(fragment, nextHost);
             }
@@ -128,25 +131,25 @@ public class NetworkLayer implements Runnable, Serializable {
                 return;
             }
             // Datagrama nao fragmentado, entrega pra camada superior
-            if(datagram.isLastDatagramFragment() && datagram.getDatagramFragmentId() == 1) {
+            if(datagram.isLastDatagramFragment() && datagram.getOffset() == 0) {
                 deliverToUpperLayer(datagram);
             } else {
                 List<Datagram> fragments = addToFragmentsList(datagram);
                 Collections.sort(fragments);
                 
                 // Verifica se lista de fragmentos esta completa (all fragments)
-                int fragId = 1;
+                int nextFragOffset = 0;
                 int dataSize = 0;
                 boolean completed = false;
                 for(Datagram d : fragments) {
-                    if(d.getDatagramFragmentId() != fragId)
+                    if(d.getOffset() != nextFragOffset)
                         return;
                     if(d.isLastDatagramFragment()) completed = true;
                     dataSize += d.getData().length;
-                    fragId++;
+                    nextFragOffset += d.getData().length;
                 }
-                byte[] data = new byte[dataSize];
                 if(completed) {
+                    byte[] data = new byte[dataSize];
                     int j = 0;
                     for(Datagram d : fragments) {
                         byte[] tempData = d.getData();
@@ -154,7 +157,10 @@ public class NetworkLayer implements Runnable, Serializable {
                             data[j] = tempData[i];
                     }
                     try {
-                        datagram = (Datagram) Utilities.toObject(data);
+                        // Cria um datagrama completo
+                        datagram = new Datagram(datagram.getSource(), datagram.getDestination(),
+                                datagram.getUpperLayerProtocol(), datagram.getTTL(), datagram.getDatagramId(),
+                                data);
                         deliverToUpperLayer(datagram);
                         datagramFragments.remove(datagram.getDatagramId());
                         fragments = null;
@@ -189,9 +195,10 @@ public class NetworkLayer implements Runnable, Serializable {
             // Repassa o datagrama mantendo ID e IP de origem (age como roteador)
             // (o host final deve lidar com a fragmentacao)
             send(d.getData(), d.getDestination(), d.getUpperLayerProtocol(), 
-                    d.getDatagramId(), d.getSource());
+                    d.getDatagramId(), d.getSource(), d.getOffset());
         } catch(TTLException ex) {
             // TTL 0, o pacote sera descartado
+            Utilities.log(Utilities.NETWORK_TAG, "TTL = 0");
         }
     }
 
@@ -201,6 +208,8 @@ public class NetworkLayer implements Runnable, Serializable {
         switch(datagram.getUpperLayerProtocol()) {
             case ProtocolStack.TRASNPORT_PROTOCOL_RDT:
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem RDT recebida");
+                Utilities.print(new String(datagram.getData()));
+                Utilities.print("Tamanho: %d", datagram.getData().length);
                 break;
             case ProtocolStack.TRASNPORT_PROTOCOL_UDT:
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem UDT recebida");

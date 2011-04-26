@@ -91,7 +91,6 @@ public class LinkLayer implements Runnable{
     private boolean sendFrame(Host h, Frame f)
     {
         byte[] sendPacket;
-        
         DatagramPacket packet;
         Host localhost = ProtocolStack.getLocalhost();
 
@@ -260,7 +259,6 @@ public class LinkLayer implements Runnable{
                     Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                     continue;
                 }
-
                  
             }
         

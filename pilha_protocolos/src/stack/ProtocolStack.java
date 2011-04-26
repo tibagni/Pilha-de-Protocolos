@@ -99,14 +99,21 @@ public class ProtocolStack {
 
             if(getLocalhost().getLogicalID().equals("1")) {
                 try {
-                    Thread.sleep(60000);
+                    Thread.sleep(6000);
                 } catch(InterruptedException ex) { }
-                
-                NetworkLayer.getInstance().send(new String("vai toma no cu").getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
+                String str = "hjk;hjkhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjkl" +
+                        "ertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyert" +
+                        "vbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnm" +
+                        "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas" +
+                        "rtyirtyurtyurtyurtyufyfghjfhfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfg" +
+                        "zxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxc" +
+                        "dfgdfghgfdfghgfdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfgh";
+                Utilities.print("Tamanho: %d", str.length());
+                NetworkLayer.getInstance().send(str.getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
                     Utilities.log(Utilities.PROTOCOL_STACK_TAG, "Packet sent!\n\n");
             }
 
-           // break;
+            break;
         }
        
 
