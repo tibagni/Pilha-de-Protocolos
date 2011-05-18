@@ -7,7 +7,6 @@ package graph;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import pilha_protocolos.Utilities;
 
 /**
  *
@@ -60,14 +59,25 @@ public class Host implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        Host n = (Host) o;
+        if(o instanceof Host) {
+            Host n = (Host) o;
 
-        if (this.getMAC().getIP().equals(n.getMAC().getIP()) && this.getLogicalID().equals(n.getLogicalID())
-                && this.getMAC().getPort().equals(n.getMAC().getPort())) {
-            return true;
+            if(this.getMAC().getIP().equals(n.getMAC().getIP()) && this.getLogicalID().equals(n.getLogicalID())
+                    && this.getMAC().getPort().equals(n.getMAC().getPort())) {
+                return true;
+            }
         }
 
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 97 * hash + (this.logicalID != null ? this.logicalID.hashCode() : 0);
+        hash = 97 * hash + (this.mac != null ? this.mac.hashCode() : 0);
+        hash = 97 * hash + (this.neighbours != null ? this.neighbours.hashCode() : 0);
+        return hash;
     }
 
     @Override

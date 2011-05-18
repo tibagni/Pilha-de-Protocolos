@@ -13,6 +13,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import pdu.Datagram;
 
 /**
  *
@@ -21,10 +24,13 @@ import java.io.Serializable;
 public class Utilities {
     
     // ativar logs (true)
-    private static final boolean LOG = true;
+    private static final boolean LOG    = true;
     
     // ativar prints (true)
-    private static final boolean PRINT = true;
+    private static final boolean PRINT  = true;
+
+    // ativar logs de exceptions (true)
+    private static final boolean LOG_EX = true;
 
     // LOG tags
     public static final String LINK_TAG = "LinkLayer";
@@ -108,6 +114,15 @@ public class Utilities {
                 System.out.printf("LOG: " + tag + ": " + message, args);
                 System.out.println();
             }
+        }
+    }
+
+    public static void logException(Exception e) {
+        if(LOG_EX) {
+            System.out.printf("EXCEPTION: " + e.getLocalizedMessage());
+            System.out.printf("\nMESSAGE: " + e.getMessage());
+            System.out.printf("\nSTACK TRACE: ");
+            e.printStackTrace();
         }
     }
 }

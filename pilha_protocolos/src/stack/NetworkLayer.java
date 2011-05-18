@@ -17,8 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Set;
 import pdu.Datagram;
 import pdu.Datagram.TTLException;
 import pilha_protocolos.Utilities;
@@ -31,12 +30,10 @@ public class NetworkLayer implements Runnable, Serializable {
 
     private HashMap<String, NextHost> routingTable;
     private HashMap<Integer, ArrayList<Datagram>> datagramFragments;
-    private ArrayList<Host> alive;
 
     private static NetworkLayer networkLayer = null;
 
-    public static final int FREEZE_TIME = 60000;
-    public static final int PING_TIME = 500;
+    public static final int FREEZE_TIME = 30000;
     public static final int HOP_LIMIT = 15;
 
     private static final Object lock = new Object();
@@ -46,7 +43,14 @@ public class NetworkLayer implements Runnable, Serializable {
         routingTable = new HashMap<String, NextHost>();
         routing = new Routing();
         datagramFragments = new HashMap<Integer, ArrayList<Datagram>>();
-        alive = new ArrayList<Host>();
+
+        // Inicializacao da tabela de roteamento - Tabela de rotas comeca conhecendo os vizinhos
+        HashMap<String, Connection> neighbours = ProtocolStack.getLocalhost().getNeighbour();
+        Iterator<String> it = neighbours.keySet().iterator();
+        while(it.hasNext()) {
+            Host h = neighbours.get(it.next()).getHost();
+            setHostInRoutingTable(h, h, 1);
+        }
     }
 
     /**
@@ -171,8 +175,7 @@ public class NetworkLayer implements Runnable, Serializable {
             }
 
         } catch(Exception ex) {
-            //Fodeu!!!
-            ex.printStackTrace();
+            Utilities.logException(ex);
         }
     }
 
@@ -230,7 +233,6 @@ public class NetworkLayer implements Runnable, Serializable {
             case ProtocolStack.ICMP_REPLAY:
                 // Ping respondido com sucesso, host conectado (online)
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP replay recebida");
-                alive.add(NetworkTopology.getInstance().getHost(datagram.getSource()));
                 break;
         }
     }
@@ -275,20 +277,30 @@ public class NetworkLayer implements Runnable, Serializable {
         Map<String, NextHost> m = 
                 Collections.synchronizedMap(routingTable);
 
+        NextHost nextHost = new NextHost(hd, hops);
 
-        NextHost nextHost = new NextHost(nh, hops);
+        if(hops > HOP_LIMIT) return false;
 
-        if(hops > HOP_LIMIT)
-            return false;
+        // Se o vizinho que enviou o pacote estiver na tabela, reinicie seu timestap
+        if(m.containsKey(nh.getLogicalID())) {
+            m.get(nh.getLogicalID()).startTimestamp();
+            // Numero de hops de um no vizinho e 1 (menor numero de hops possivel)
+            m.get(nh.getLogicalID()).setHops(1);
+        } else {
+            // Se o vizinho nao estiver na tabela, adicione-o
+            m.put(nh.getLogicalID(), new NextHost(nh, 1));
+        }
 
-        if(((!m.containsKey(hd.getLogicalID()))
-                || isShorter(hd.getLogicalID(),nextHost)) &&
-                (!ProtocolStack.getLocalhost().getLogicalID().equals(hd.getLogicalID())) )
-        {
+        // A entrada é atualizada caso o caminho apresentado seja menor ou o NextHost seja o mesmo da tabela
+        // se nao houver entrada, cria
+        // nao adiciona entrada para localhost
+        if(((!m.containsKey(hd.getLogicalID())) || isShorter(hd.getLogicalID(), nextHost)
+                || m.get(hd.getLogicalID()).getHost().equals(nh))
+                && (!ProtocolStack.getLocalhost().getLogicalID().equals(hd.getLogicalID())) ) {
+
             m.put(hd.getLogicalID(), nextHost);
             return true;
         }
-
         return false;
     }
 
@@ -300,30 +312,30 @@ public class NetworkLayer implements Runnable, Serializable {
         while(true)
         {
             try {
-                // Verifica se os vizinhos estao conectados
-                routing.checkAlive();
-                Thread.sleep(PING_TIME);
-
                 routing.start();
                 // loga a routing table
-                Utilities.log(Utilities.NETWORK_TAG, "%s\n %s\n",routingTable, ProtocolStack.getLocalhost());
+                Utilities.log(Utilities.NETWORK_TAG, "%s\n %s\n", routingTable, ProtocolStack.getLocalhost());
                 
                 Thread.sleep(FREEZE_TIME);
 
             } catch (InterruptedException ex) {
-                Logger.getLogger(NetworkLayer.class.getName()).log(Level.SEVERE, null, ex);
+                Utilities.logException(ex);
             }
         }
     }
 
     private class NextHost implements Serializable {
+        public static final int TIMESTAMP = 3;
+
         private Host host;
         private int hops;
+        private int timestamp;
 
 
         public NextHost(Host h, int hp) {
             host = h;
             hops = hp;
+            timestamp = TIMESTAMP;
         }
 
         public Host getHost() {
@@ -342,46 +354,69 @@ public class NetworkLayer implements Runnable, Serializable {
             hops = h;
         }
 
+        public int decTimestamp() {
+            return --timestamp;
+        }
+
+        public int startTimestamp() {
+            timestamp = TIMESTAMP;
+            return timestamp;
+        }
+
         @Override
         public String toString() {
-            return "host: " + host + " hopes: " + hops;
+            return "<host: " + host + " hopes: " + hops + " timestamp: " + timestamp + ">";
         }
     }
 
     private class Routing implements Serializable
-    {
-
-        public void checkAlive() {
-            synchronized(lock) {
-                HashMap<String, Connection> neighbours = ProtocolStack.getLocalhost().getNeighbour();
-                Iterator<String> it = neighbours.keySet().iterator();
-                while(it.hasNext()) {
-                    Host h = neighbours.get(it.next()).getHost();
-
-                    setHostInRoutingTable(h, h, 1);
-                    send(new String("icmp request").getBytes(), h.getLogicalID(),
-                            ProtocolStack.ICMP_REQUEST);
-                }
-            }
-        }
-        
+    {        
         public void start()
         {
                 synchronized(lock)
                 {
-                    // Limpa Routing table
-                    routingTable.clear();
+                    // Recupera tabela de roteamento sincronizada
+                    Map<String, NextHost> routes =
+                            Collections.synchronizedMap(routingTable);
                     ArrayList<DistanceVector> distanceVector = new ArrayList<DistanceVector>();
+                    // Decrementa timestamp de todos as entradas da tabela
+                    // e limpa as entradas que nao estao mais ligadas
 
-                    // Percorre apenas vizinhos ativos
-                    for(Host h : alive) {
-                        setHostInRoutingTable(h,h,1);
-                        distanceVector.add(new DistanceVector(h.getLogicalID(), 1));
+                    //tasks
+                    //TODO java.util.ConcurrentModificationException linha 382 (387)
+                    //(provavelmente o loop do iterator tem ue estar em um bloco de codigo sync...)
+                    //TODO tabela de rotas com problema, todos os hosts iguais depois de receber
+
+                    Set s = Collections.synchronizedSet(routes.keySet());
+                    ArrayList<String> toRemove = new ArrayList<String>();
+                    synchronized(s) {   // Evita que duas threads iterem por este set ao mesmo tempo!
+                        Iterator<String> it = s.iterator();
+                        while(it.hasNext()) {
+                            String key = it.next();
+                            if(routes.get(key).decTimestamp() < 0) {
+                                // Remove entrada com timestamp negativo da tabela (parte 2 da POG)
+                                // Do modo mais filho da puta eu acabei descobrindo que nao se pode
+                                // remover um elemento de uma collection dentro de um loop de um iterator
+                                // sincronizado.
+                                // Para resolver isso, a gambiarra e: salva todos os keys que devem ser removidos
+                                // e remove fora do loop, fora do bloco sincronizado (mas usando a tabela sincronizada)
+                                toRemove.add(key);
+                            } else {
+                                // Cria uma entrada para cada rota na tabela para publicar.
+                                NextHost nh = routes.get(key);
+                                if(nh != null) {
+                                    distanceVector.add(new DistanceVector(key, nh.getHops()));
+                                }
+                            }
+                        }
+                        // Segunda parte da gambiarra! Infelizmente tera que ter outro loop =/
+                        // remove da tabela de roteamento tdos os hosts que estao em toRemove
+                        for(String removeHost : toRemove) {
+                            routes.remove(removeHost);
+                        }
                     }
-
                     //PROPAGAR
                     sendDistanceVector(distanceVector);
-                    alive.clear();
               }
         }
 
@@ -389,23 +424,18 @@ public class NetworkLayer implements Runnable, Serializable {
         {
             synchronized(lock)
             {
-                
-                ArrayList<DistanceVector> myArray = new ArrayList<DistanceVector>();
                 for(int i = 0; i < array.size(); i++)
                 {
                     DistanceVector d = array.get(i);
                     Host hd = NetworkTopology.getInstance().getHost(d.getDestination());
                     Host nh = NetworkTopology.getInstance().getHost(source);
 
-                    if(setHostInRoutingTable(hd,nh,d.getHops()+1))
-                        myArray.add(new DistanceVector(hd.getLogicalID(),d.getHops()+1));
-
-
+                    setHostInRoutingTable(hd, nh, d.getHops() + 1);
+                    Utilities.log(Utilities.NETWORK_TAG, "Distance vector:");
+                    Utilities.log(Utilities.NETWORK_TAG, "\nDest: " + hd.getLogicalID() + " NextHost: " + nh.getLogicalID());
                 }
-
-                sendDistanceVector(myArray);
-
-                Utilities.log(Utilities.NETWORK_TAG, "%s\n",routingTable);
+                Utilities.log(Utilities.NETWORK_TAG, "Vetor de distancia recebido: ");
+                Utilities.log(Utilities.NETWORK_TAG, "%s\n", routingTable);
             }
         }
     }
@@ -446,6 +476,5 @@ public class NetworkLayer implements Runnable, Serializable {
         {
             return hops;
         }
-
     }
 }
