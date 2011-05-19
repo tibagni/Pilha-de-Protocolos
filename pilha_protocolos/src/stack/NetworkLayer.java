@@ -297,7 +297,7 @@ public class NetworkLayer implements Runnable, Serializable {
         if(((!m.containsKey(hd.getLogicalID())) || isShorter(hd.getLogicalID(), nextHost)
                 || m.get(hd.getLogicalID()).getHost().equals(nh))
                 && (!ProtocolStack.getLocalhost().getLogicalID().equals(hd.getLogicalID())) ) {
-
+            // TODO arrumar atualizacao da tabela quando uma rota do mesmo NextHost e recebida
             m.put(hd.getLogicalID(), nextHost);
             return true;
         }
@@ -381,11 +381,6 @@ public class NetworkLayer implements Runnable, Serializable {
                     ArrayList<DistanceVector> distanceVector = new ArrayList<DistanceVector>();
                     // Decrementa timestamp de todos as entradas da tabela
                     // e limpa as entradas que nao estao mais ligadas
-
-                    //tasks
-                    //TODO java.util.ConcurrentModificationException linha 382 (387)
-                    //(provavelmente o loop do iterator tem ue estar em um bloco de codigo sync...)
-                    //TODO tabela de rotas com problema, todos os hosts iguais depois de receber
 
                     Set s = Collections.synchronizedSet(routes.keySet());
                     ArrayList<String> toRemove = new ArrayList<String>();
