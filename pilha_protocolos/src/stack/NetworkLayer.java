@@ -201,7 +201,7 @@ public class NetworkLayer implements Runnable, Serializable {
                     d.getDatagramId(), d.getSource(), d.getOffset());
         } catch(TTLException ex) {
             // TTL 0, o pacote sera descartado
-            Utilities.log(Utilities.NETWORK_TAG, "TTL = 0, discartando pacote");
+            Utilities.log(Utilities.NETWORK_TAG, "TTL = 0, descartando pacote");
         }
     }
 
