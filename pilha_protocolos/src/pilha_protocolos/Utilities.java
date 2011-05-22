@@ -13,9 +13,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import pdu.Datagram;
 
 /**
  *
@@ -54,7 +51,7 @@ public class Utilities {
             out.writeObject(o);
             bytes = bos.toByteArray();
         } catch(IOException ex) {
-            ex.printStackTrace();
+            logException(ex);
             return -1;
         }
 
@@ -72,7 +69,7 @@ public class Utilities {
             out.writeObject(o);
             bytes = bos.toByteArray();
         } catch(IOException ex) {
-            ex.printStackTrace();
+            logException(ex);
             return null;
         }
 
@@ -87,10 +84,10 @@ public class Utilities {
             in = new ObjectInputStream(bis);
             o = in.readObject();
         } catch(IOException ex) {
-            ex.printStackTrace();
+            logException(ex);
             return null;
         } catch(ClassNotFoundException e) {
-            e.printStackTrace();
+            logException(e);
             return null;
         }
         return o;
@@ -98,20 +95,20 @@ public class Utilities {
 
     public static void print(String s, Object... args) {
         if(PRINT) {
-            System.out.printf("PRINT: " + s, args);
+            System.out.printf("PRINT=> " + s, args);
             System.out.println();
         }
     }
 
     public static void printError(String s, Object... args) {
-        System.err.printf("ERROR: " + s, args);
-        System.out.println();
+        System.err.printf("ERROR=> " + s, args);
+        System.err.println();
     }
 
     public static void log(String tag, String message, Object... args) {
         if(LOG) {
             if(FILTER.equals(NO_FILTER) || FILTER.equals(tag)) {
-                System.out.printf("LOG: " + tag + ": " + message, args);
+                System.out.printf("LOG [" + tag + "]=> " + message, args);
                 System.out.println();
             }
         }
@@ -119,10 +116,17 @@ public class Utilities {
 
     public static void logException(Exception e) {
         if(LOG_EX) {
-            System.out.printf("EXCEPTION: " + e.getLocalizedMessage());
-            System.out.printf("\nMESSAGE: " + e.getMessage());
-            System.out.printf("\nSTACK TRACE: ");
+            System.err.printf("EXCEPTION: " + e.getLocalizedMessage());
+            System.err.printf("\nMESSAGE: " + e.getMessage());
+            System.err.printf("\n===STACK TRACE===\n");
             e.printStackTrace();
         }
+    }
+
+    public static void logMethod() {
+        StackTraceElement[] st = Thread.getAllStackTraces().get(Thread.currentThread());
+        StackTraceElement element = st[3];
+        System.out.println("LOG [METHOD]=> " + element.getClassName()
+                + "." + element.getMethodName());
     }
 }

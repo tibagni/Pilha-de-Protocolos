@@ -201,7 +201,7 @@ public class NetworkLayer implements Runnable, Serializable {
                     d.getDatagramId(), d.getSource(), d.getOffset());
         } catch(TTLException ex) {
             // TTL 0, o pacote sera descartado
-            Utilities.log(Utilities.NETWORK_TAG, "TTL = 0");
+            Utilities.log(Utilities.NETWORK_TAG, "TTL = 0, discartando pacote");
         }
     }
 
@@ -218,7 +218,7 @@ public class NetworkLayer implements Runnable, Serializable {
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem UDT recebida");
                 break;
             case ProtocolStack.ROUTING_ALGORITHM:
-                Utilities.log(Utilities.NETWORK_TAG, "Mensagem do algoritmo de roteamento recebida");
+                Utilities.log(Utilities.NETWORK_TAG, "Vetor de distancia recebido");
                 ArrayList<DistanceVector> distanceVector =
                         (ArrayList<DistanceVector>)Utilities.toObject(datagram.getData());
                 routing.recalculate(distanceVector, datagram.getSource());
@@ -226,12 +226,10 @@ public class NetworkLayer implements Runnable, Serializable {
             case ProtocolStack.ICMP_REQUEST:
                 // Manda ICMP replay
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP request recebida, enviando replay...");
-                Host h = NetworkTopology.getInstance().getHost(datagram.getSource());
-                setHostInRoutingTable(h, h, 1);
                 send(new String("icmp replay").getBytes(), datagram.getSource(), ProtocolStack.ICMP_REPLAY);
                 break;
             case ProtocolStack.ICMP_REPLAY:
-                // Ping respondido com sucesso, host conectado (online)
+                // Ping respondido com sucesso.
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP replay recebida");
                 break;
         }
@@ -426,11 +424,7 @@ public class NetworkLayer implements Runnable, Serializable {
                     Host nh = NetworkTopology.getInstance().getHost(source);
 
                     setHostInRoutingTable(hd, nh, d.getHops() + 1);
-                    Utilities.log(Utilities.NETWORK_TAG, "Distance vector:");
-                    Utilities.log(Utilities.NETWORK_TAG, "\nDest: " + hd.getLogicalID() + " NextHost: " + nh.getLogicalID());
                 }
-                Utilities.log(Utilities.NETWORK_TAG, "Vetor de distancia recebido: ");
-                Utilities.log(Utilities.NETWORK_TAG, "%s\n", routingTable);
             }
         }
     }
