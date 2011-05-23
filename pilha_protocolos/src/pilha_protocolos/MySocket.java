@@ -60,6 +60,16 @@ public class MySocket {
     }
 
     /**
+     * Recupera dados recebidos pela conexao se estiverem disponiveis.
+     * Se nao houverem dados disponiveis, aguarda ate receber
+     *
+     * @return byte[] Dados recebidos da conexao
+     */
+    public byte[] recieve() {
+        return dequeueData().getData();
+    }
+
+    /**
      * Close socket
      */
     public void close() {
@@ -107,7 +117,7 @@ public class MySocket {
      *
      * @return Primeiro segmento da fila
      */
-    public Segment dequeueData(){
+    private Segment dequeueData(){
         Segment s = null;
 
         try {
