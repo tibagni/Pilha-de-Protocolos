@@ -122,7 +122,7 @@ public class TransportLayer {
     }
 
     private class SocketWrapper implements Runnable {
-        static final int TIMEOUT = 4000;
+        private static final int TIMEOUT = 4000;
         MySocket socket;
         private ArrayList<Segment> sentSegments;
         private ExecutorService timerThread;
@@ -135,7 +135,7 @@ public class TransportLayer {
             while(true) {
                 try {
                     Thread.sleep(TIMEOUT);
-                    // TODO Envia os segmentos da lista
+                    TransportLayer.getInstance().send(socket.getLocalPort(), synchronizedSegmentsList().get(0));
                 } catch(InterruptedException ex) {
                     Utilities.logException(ex);
                 }
