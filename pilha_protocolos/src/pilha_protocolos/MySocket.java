@@ -6,6 +6,8 @@
 package pilha_protocolos;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import pdu.Segment;
 import stack.TransportLayer;
 
@@ -72,5 +74,21 @@ public class MySocket {
         return remotePort;
     }
 
-    // TODO criar os metodos para manipular a fila do socket!! (ArrayBlockingQueue)
+    public boolean insertSegment(Segment s){
+        return dataQueue.offer(s);
+    }
+
+    public Segment getSegment(){
+        Segment s = null;
+
+        try {
+            s = dataQueue.take();
+        } catch (InterruptedException ex) {
+            Logger.getLogger(MySocket.class.getName()).log(Level.SEVERE, null, ex);
+        }finally{
+            return s;
+        }
+    }
+
+ 
 }

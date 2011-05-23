@@ -5,11 +5,13 @@
 
 package pdu;
 
+import java.io.Serializable;
+
 /**
  *
  * @author tiago
  */
-public class Segment {
+public class Segment implements Serializable {
 
     private int sourcePort;
     private int destPort;
