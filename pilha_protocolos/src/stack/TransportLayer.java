@@ -85,7 +85,18 @@ public class TransportLayer {
      * three-way handshake
      */
     private boolean connectRDT(MySocket socket) {
-        // TODO realizar conexao RDT (three way handshake TCP)
+        Segment connectSegment = new Segment(socket.getLocalPort(),
+                                             socket.getRemotePort(),
+                                             socket.getSeqNumber(),
+                                             0, // O primeiro ack e zero
+                                             null,
+                                             0, //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+
+        // Seta a flag SYN para o estabelecimento da conexao
+        connectSegment.setSYN(true);
+        send(socket.getLocalPort(), connectSegment);
+
         return true;
     }
 
@@ -124,11 +135,14 @@ public class TransportLayer {
     private class SocketWrapper implements Runnable {
         private static final int TIMEOUT = 4000;
         MySocket socket;
+        boolean connected = false;
+        private ArrayList<Segment> toSend;
         private ArrayList<Segment> sentSegments;
         private ExecutorService timerThread;
 
         SocketWrapper(MySocket socket) {
             sentSegments = new ArrayList<Segment>();
+            toSend = new ArrayList<Segment>();
         }
 
         public void run() {
@@ -142,8 +156,12 @@ public class TransportLayer {
             }
         }
 
-        public ArrayList<Segment> synchronizedSegmentsList() {
+        public ArrayList<Segment> synchronizedSentSegmentsList() {
             return (ArrayList<Segment>) Collections.synchronizedList(sentSegments);
+        }
+
+        public ArrayList<Segment> synchronizedToSendList() {
+            return (ArrayList<Segment>) Collections.synchronizedList(toSend);
         }
 
         public void startTimer() {

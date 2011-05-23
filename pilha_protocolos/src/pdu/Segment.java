@@ -20,6 +20,10 @@ public class Segment implements Serializable {
     private byte[] data;
     private int windowSize;
     private int protocol;
+    
+    // Flags
+    private boolean syn;
+    private boolean fin;
 
     public Segment(int srcPort, int dstPort, int seq, int ack, byte[] data, 
             int windowSze, int proto) {
@@ -69,6 +73,36 @@ public class Segment implements Serializable {
 
     public void setWindowSize(int windowSize) {
         this.windowSize = windowSize;
+    }
+
+    /**
+     * Seta o valor da flag SYN - usada no estabelecimento da conexao
+     * No momento da conexao (3-way handshake) e somente no momento da conexao
+     * esta flag DEVE ser true
+     *
+     * @param s valor booleano para a flag
+     */
+    public void setSYN(boolean s) {
+        syn = s;
+    }
+
+    /**
+     * Seta o valor da flag FIN - usada no encerramento da conexao
+     * No momento do encerramento da conxao e somente no encerramento esta flag
+     * DEVE ser true
+     *
+     * @param f valor booleano para a flag
+     */
+    public void setFIN(boolean f) {
+        fin = f;
+    }
+
+    public boolean getSYN() {
+        return syn;
+    }
+
+    public boolean getFIN() {
+        return fin;
     }
 
 }
