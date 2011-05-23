@@ -21,7 +21,19 @@ public class Segment implements Serializable {
     private int windowSize;
     private int protocol;
 
-    public Segment(){
+    public Segment(int srcPort, int dstPort, int seq, int ack, byte[] data, 
+            int windowSze, int proto) {
+        sourcePort = srcPort;
+        destPort = dstPort;
+        seqNumber = seq;
+        ackNum = ack;
+        this.data = data;
+        windowSize = windowSze;
+        protocol = proto;
+
+    }
+    public Segment(int srcPort, int dstPort, byte[] data, int proto) {
+        this(srcPort, dstPort, 0, 0, data, 0, proto);
 
     }
     
@@ -45,6 +57,18 @@ public class Segment implements Serializable {
     }
     public byte[] getData(){
         return data;
+    }
+
+    public void setAckNum(int ackNum) {
+        this.ackNum = ackNum;
+    }
+
+    public void setSeqNumber(int seqNumber) {
+        this.seqNumber = seqNumber;
+    }
+
+    public void setWindowSize(int windowSize) {
+        this.windowSize = windowSize;
     }
 
 }

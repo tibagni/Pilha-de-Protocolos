@@ -5,10 +5,10 @@
 
 package pilha_protocolos;
 
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import pdu.Segment;
+import stack.ProtocolStack;
 import stack.TransportLayer;
 
 
@@ -26,8 +26,12 @@ public class MySocket {
 
     private ArrayBlockingQueue<Segment> dataQueue;
 
+    private int sequenceNumber;
+
     // Capacidade da fila de dados
     private static final int QUEUE_CAPACITY = 10;
+
+    private static final int SEQ_LIMIT = 65000;
 
     public MySocket(String localAddr, int localPort, String remoteAddr, int remotePort) {
         localAddress = localAddr;
@@ -36,6 +40,9 @@ public class MySocket {
         this.remotePort = remotePort;
 
         dataQueue = new ArrayBlockingQueue<Segment>(QUEUE_CAPACITY);
+
+        //Inicia o numero de sequencia...
+        sequenceNumber = new Random().nextInt(SEQ_LIMIT);
     }
 
     /**
@@ -45,9 +52,10 @@ public class MySocket {
      * @return numero de bytes enviados
      */
     public int send(byte[] data) {
-        Segment segment = new Segment();
-        // TODO criar o segmento com os dados fornecidos
+        Segment segment = new Segment(localPort, remotePort, data,
+                ProtocolStack.TRASNPORT_PROTOCOL_RDT);
 
+        // Manda para a camada de transporte
         return TransportLayer.getInstance().send(localPort, segment);
     }
 
@@ -74,18 +82,39 @@ public class MySocket {
         return remotePort;
     }
 
-    public boolean insertSegment(Segment s){
+    public int getSeqNumber() {
+        return sequenceNumber;
+    }
+
+    public void setSeqNumber(int newSeq) {
+        sequenceNumber = newSeq;
+    }
+
+    /**
+     * coloca dados no fim da fila do socket
+     * @param s Segmento a ser inserido no fim da fila
+     * 
+     * @return true se o segmento foi adicionado na fila
+     */
+    public boolean enqueueData(Segment s){
         return dataQueue.offer(s);
     }
 
-    public Segment getSegment(){
+    /**
+     * Retorna o primeiro segmento da fila
+     * Se a fila estiver vazia, a thread e bloqueada ate que algum dado
+     * fique disponivel
+     *
+     * @return Primeiro segmento da fila
+     */
+    public Segment dequeueData(){
         Segment s = null;
 
         try {
             s = dataQueue.take();
         } catch (InterruptedException ex) {
-            Logger.getLogger(MySocket.class.getName()).log(Level.SEVERE, null, ex);
-        }finally{
+            Utilities.logException(ex);
+        } finally {
             return s;
         }
     }

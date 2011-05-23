@@ -5,10 +5,14 @@
 
 package stack;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import pdu.Segment;
 import pilha_protocolos.MySocket;
+import pilha_protocolos.Utilities;
 
 /**
  * Comentarios:
@@ -24,12 +28,12 @@ import pilha_protocolos.MySocket;
  * @author tiago
  */
 public class TransportLayer {
-    private HashMap<Integer, MySocket> sockets;
+    private HashMap<Integer, SocketWrapper> sockets;
 
     private static TransportLayer transportLayer = null;
 
     private TransportLayer() {
-        sockets = new HashMap<Integer, MySocket>();
+        sockets = new HashMap<Integer, SocketWrapper>();
     }
 
     public static TransportLayer getInstance() {
@@ -45,8 +49,8 @@ public class TransportLayer {
      *
      * @return HashMap de sockets seguro (Thread-safe)
      */
-    private HashMap<Integer, MySocket> synchronizedSockets() {
-        return (HashMap<Integer, MySocket>)
+    private HashMap<Integer, SocketWrapper> synchronizedSockets() {
+        return (HashMap<Integer, SocketWrapper>)
                 Collections.synchronizedMap(sockets);
     }
 
@@ -66,7 +70,8 @@ public class TransportLayer {
         if(!connectRDT(socket)) return false;
 
         //Rgister socket
-        MySocket registeredSocket = synchronizedSockets().put(socket.getLocalPort(), socket);
+        SocketWrapper registeredSocket = synchronizedSockets().put(socket.getLocalPort(),
+                new SocketWrapper(socket));
         if(registeredSocket == null) {
             //Nao foi possivel registrar o socket...
             // Fecha a conexao RDT (TCP)
@@ -105,11 +110,51 @@ public class TransportLayer {
     public int send(int portMap, Segment segment) {
         if(!synchronizedSockets().containsKey(portMap)) return -1;
 
+        MySocket socket = synchronizedSockets().get(portMap).socket;
+        segment.setSeqNumber(socket.getSeqNumber());
+
         return sendRDT();
     }
 
     private int sendRDT() {
         // TODO envia os dados (segmento) para a camada de rede!!
         return 0;
+    }
+
+    private class SocketWrapper implements Runnable {
+        static final int TIMEOUT = 4000;
+        MySocket socket;
+        private ArrayList<Segment> sentSegments;
+        private ExecutorService timerThread;
+
+        SocketWrapper(MySocket socket) {
+            sentSegments = new ArrayList<Segment>();
+        }
+
+        public void run() {
+            while(true) {
+                try {
+                    Thread.sleep(TIMEOUT);
+                    // TODO Envia os segmentos da lista
+                } catch(InterruptedException ex) {
+                    Utilities.logException(ex);
+                }
+            }
+        }
+
+        public ArrayList<Segment> synchronizedSegmentsList() {
+            return (ArrayList<Segment>) Collections.synchronizedList(sentSegments);
+        }
+
+        public void startTimer() {
+            timerThread = Executors.newFixedThreadPool(1);
+            timerThread.execute(this);
+            timerThread.shutdown();
+        }
+
+        public void stopTimer() {
+            timerThread.shutdownNow();
+        }
+
     }
 }
