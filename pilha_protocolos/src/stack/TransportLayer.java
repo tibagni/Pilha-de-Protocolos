@@ -8,6 +8,8 @@ package stack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import pdu.Segment;
@@ -132,47 +134,76 @@ public class TransportLayer {
         return 0;
     }
 
-    private class SocketWrapper implements Runnable {
+    private class SocketWrapper {
         private static final int TIMEOUT = 4000;
         MySocket socket;
         boolean connected = false;
         private ArrayList<Segment> toSend;
         private ArrayList<Segment> sentSegments;
-        private ExecutorService timerThread;
+        private ArrayList<Timer> segTimers;
+
+        
 
         SocketWrapper(MySocket socket) {
             sentSegments = new ArrayList<Segment>();
             toSend = new ArrayList<Segment>();
+            segTimers = new ArrayList<Timer>();
+
+
         }
 
-        public void run() {
-            while(true) {
-                try {
-                    Thread.sleep(TIMEOUT);
-                    TransportLayer.getInstance().send(socket.getLocalPort(), synchronizedSegmentsList().get(0));
-                } catch(InterruptedException ex) {
-                    Utilities.logException(ex);
-                }
+        public void startTimer(Segment s){
+            Timer t = new Timer();
+            SegmentTask task = new SegmentTask(s);
+
+            t.schedule(task,TIMEOUT,TIMEOUT+100);
+            synchronizedTimers().add(t);
+            synchronizedSentSegments().add(s);
+
+        }
+
+        public ArrayList<Segment> synchronizedSentSegments(){
+            return (ArrayList<Segment>)Collections.synchronizedList(sentSegments);
+        }
+        public ArrayList<Timer> synchronizedTimers(){
+            return (ArrayList<Timer>)Collections.synchronizedList(segTimers);
+        }
+
+        public void stopTimer(Segment s){
+            int index = synchronizedSentSegments().indexOf(s);
+
+            if(index != -1){
+                synchronizedSentSegments().remove(index); // remove segmento
+                synchronizedTimers().remove(index).cancel(); //para timer
             }
         }
 
-        public ArrayList<Segment> synchronizedSentSegmentsList() {
-            return (ArrayList<Segment>) Collections.synchronizedList(sentSegments);
-        }
+        private class SegmentTask extends TimerTask{
+            private int times; //quantas vezes foi enviado
+            private Segment seg;
+            private final static int STOP_SEND = 3;
 
-        public ArrayList<Segment> synchronizedToSendList() {
-            return (ArrayList<Segment>) Collections.synchronizedList(toSend);
-        }
+            public SegmentTask(Segment s){
+                seg = s;
+                times  = 0;
+            }
 
-        public void startTimer() {
-            timerThread = Executors.newFixedThreadPool(1);
-            timerThread.execute(this);
-            timerThread.shutdown();
-        }
+            @Override
+            public void run() {
+                if(times < STOP_SEND)
+                    TransportLayer.getInstance().send(socket.getLocalPort(), seg);
 
-        public void stopTimer() {
-            timerThread.shutdownNow();
+                times++;
+            }
+
+            public Segment getSegment(){
+                return seg;
+            }
+
         }
+        
 
     }
+
+
 }
