@@ -10,8 +10,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import pdu.Segment;
 import pilha_protocolos.MySocket;
 import pilha_protocolos.Utilities;
