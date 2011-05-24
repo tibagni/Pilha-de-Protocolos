@@ -6,6 +6,7 @@
 package pdu;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  *
@@ -105,4 +106,49 @@ public class Segment implements Serializable {
         return fin;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == null) {
+            return false;
+        }
+        if(getClass() != obj.getClass()) {
+            return false;
+        }
+        final Segment other = (Segment) obj;
+        if(this.sourcePort != other.sourcePort) {
+            return false;
+        }
+        if(this.destPort != other.destPort) {
+            return false;
+        }
+        if(this.seqNumber != other.seqNumber) {
+            return false;
+        }
+        if(this.ackNum != other.ackNum) {
+            return false;
+        }
+        if(!Arrays.equals(this.data, other.data)) {
+            return false;
+        }
+        if(this.windowSize != other.windowSize) {
+            return false;
+        }
+        if(this.protocol != other.protocol) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.sourcePort;
+        hash = 79 * hash + this.destPort;
+        hash = 79 * hash + this.seqNumber;
+        hash = 79 * hash + this.ackNum;
+        hash = 79 * hash + Arrays.hashCode(this.data);
+        hash = 79 * hash + this.windowSize;
+        hash = 79 * hash + this.protocol;
+        return hash;
+    }
 }
