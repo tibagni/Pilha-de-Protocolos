@@ -68,9 +68,6 @@ public class TransportLayer {
             //Nao pode haver dois sockets registrados e escutando a mesma porta!!
             return false;
         }
-        // Falha se a conexao nao puder ser estabelecida
-        if(!connectRDT(socket)) return false;
-
         //Rgister socket
         SocketWrapper registeredSocket = synchronizedSockets().put(socket.getLocalPort(),
                 new SocketWrapper(socket));
@@ -80,7 +77,8 @@ public class TransportLayer {
             closeRDTConnection();
             return false;
         }
-        return true;
+        //Comeca o 3-way handshake
+        return connectRDT(socket);
     }
 
     /**
@@ -91,12 +89,13 @@ public class TransportLayer {
                                              socket.getRemotePort(),
                                              socket.getSeqNumber(),
                                              0, // O primeiro ack e zero
-                                             null,
+                                             new byte[1], //manda 1 byte
                                              0, //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
 
         // Seta a flag SYN para o estabelecimento da conexao
         connectSegment.setSYN(true);
+        // Envia pacote para requisitar conexao
         send(socket.getLocalPort(), connectSegment);
 
         return true;
@@ -132,6 +131,39 @@ public class TransportLayer {
     private int sendRDT() {
         // TODO envia os dados (segmento) para a camada de rede!!
         return 0;
+    }
+
+    private void deliverToUpperLayer() {
+
+    }
+
+    public void receive(Segment segment) {
+        if(segment.getSYN()) {
+            //Estabelecimento de conexao
+            if(segment.getAck() == 0) {
+                //Requisicao de conexao, enviar ACK
+                int ackNum = segment.getSeqNumber() + 1;
+                // Estabelecer conexao deste lado (servidor)
+                synchronizedSockets().get(segment.getDestPort()).connected = true;
+                //Enviar SYNACK (flag SYN continua ativada)
+
+            } else if(segment.getAck() == segment.getSeqNumber() + 1) {
+                //Ack de pedido de conexao, conexao estabelecida
+                synchronizedSockets().get(segment.getDestPort()).connected = true;
+                //enviar ultimo ACK (flag SYN desativada)
+                int ackNum = segment.getSeqNumber() + 1;
+            } else {
+                //fodeu total
+                Utilities.printError("3-way handshake - Estado invalido");
+            }
+        } else {
+            if(segment.getData().length == 1) {
+                // Segmento de ack apenas, sem dados
+                //TODO reconhecer segmentos enviados
+            }
+            //TODO deliver to upper layer na camada de transporte
+            deliverToUpperLayer();
+        }
     }
 
     private class SocketWrapper {
