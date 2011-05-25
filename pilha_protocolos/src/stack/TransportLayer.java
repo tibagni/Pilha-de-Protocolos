@@ -162,11 +162,14 @@ public class TransportLayer {
                                              new byte[1], //manda 1 byte
                                              0, //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                server.enqueueAcceptData(segment);
                 send(segment.getSourcePort(),s);
+
 
             } else if(segment.getAck() == segment.getSeqNumber() + 1) {
                 //Ack de pedido de conexao, conexao estabelecida
                 synchronizedSockets().get(segment.getDestPort()).connected = true;
+                
                 //enviar ultimo ACK (flag SYN desativada)
                 int ackNum = segment.getSeqNumber() + 1;
             } else {
