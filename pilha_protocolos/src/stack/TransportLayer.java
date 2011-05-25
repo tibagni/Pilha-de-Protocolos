@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import pdu.Segment;
-import pilha_protocolos.MySocket;
+import sockets.MySocket;
 import pilha_protocolos.Utilities;
 
 /**
@@ -29,11 +29,13 @@ import pilha_protocolos.Utilities;
  */
 public class TransportLayer {
     private HashMap<Integer, SocketWrapper> sockets;
+    private MySocket server = null;
 
     private static TransportLayer transportLayer = null;
 
     private TransportLayer() {
         sockets = new HashMap<Integer, SocketWrapper>();
+
     }
 
     public static TransportLayer getInstance() {
@@ -120,10 +122,19 @@ public class TransportLayer {
     public int send(int portMap, Segment segment) {
         if(!synchronizedSockets().containsKey(portMap)) return -1;
 
-        MySocket socket = synchronizedSockets().get(portMap).socket;
+        MySocket socket = (MySocket) synchronizedSockets().get(portMap).socket;
         segment.setSeqNumber(socket.getSeqNumber());
 
         return sendRDT();
+    }
+
+    public boolean registerServerSocket(MySocket s){
+        if(server == null){
+            server = s;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private int sendRDT() {
@@ -138,12 +149,20 @@ public class TransportLayer {
     public void receive(Segment segment) {
         if(segment.getSYN()) {
             //Estabelecimento de conexao
-            if(segment.getAck() == 0) {
+            if(segment.getAck() == 0 && server != null) {
                 //Requisicao de conexao, enviar ACK
                 int ackNum = segment.getSeqNumber() + 1;
                 // Estabelecer conexao deste lado (servidor)
                 synchronizedSockets().get(segment.getDestPort()).connected = true;
                 //Enviar SYNACK (flag SYN continua ativada)
+                Segment s = new Segment(segment.getDestPort(),
+                                             segment.getSourcePort(),
+                                             segment.getDestPort(),
+                                             0, // O primeiro ack e zero
+                                             new byte[1], //manda 1 byte
+                                             0, //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                send(segment.getSourcePort(),s);
 
             } else if(segment.getAck() == segment.getSeqNumber() + 1) {
                 //Ack de pedido de conexao, conexao estabelecida
@@ -231,9 +250,5 @@ public class TransportLayer {
             }
 
         }
-        
-
     }
-
-
 }

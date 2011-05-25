@@ -3,11 +3,12 @@
  * and open the template in the editor.
  */
 
-package pilha_protocolos;
+package sockets;
 
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import pdu.Segment;
+import pilha_protocolos.Utilities;
 import stack.ProtocolStack;
 import stack.TransportLayer;
 
