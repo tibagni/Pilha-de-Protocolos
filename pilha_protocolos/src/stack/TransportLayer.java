@@ -127,7 +127,10 @@ public class TransportLayer {
         MySocket socket = (MySocket) synchronizedSockets().get(portMap).socket;
         segment.setSeqNumber(socket.getSeqNumber());
 
-        return sendRDT();
+        //TODO dividir o segmento para enviar
+
+        // Loop enviando todos os segmentos
+        return sendRDT(segment);
     }
 
     public boolean registerServerSocket(MySocket s){
@@ -139,9 +142,29 @@ public class TransportLayer {
         }
     }
 
-    private int sendRDT() {
-        // TODO envia os dados (segmento) para a camada de rede!!
-        return 0;
+    private int sendRDT(Segment seg) {
+        SocketWrapper sw = synchronizedSockets().get(seg.getSourcePort());
+        // Adiciona na lista de segmentos a serem enviados
+        sw.synchronizedToSendSegments().add(seg);
+        if (sw.getReceiversWindowSize() < Utilities.getObjectSize(seg)) {
+            //Controle de fluxo!!! Nao envia se a janela do receptor estiver
+            //cheia, segmento fica armazenado em toSend!
+
+            //TODO inicia uma thread que fica verificando o tamanho da janela
+            // a cada instante de tempo e envia os segmentos pendentes quando der
+            return 0;
+        }
+        // Inicia o timer relacionado ao segmento
+        sw.startTimer(seg);
+        //Agora o segmento pode ser retirado da fila de pendentes (toSend)
+        sw.synchronizedToSendSegments().remove(seg);
+
+        //Envia segmento para a camada de rede
+        byte[] segmentBytes = Utilities.toByteArray(seg);
+        NetworkLayer.getInstance().send(segmentBytes, sw.socket.getRemoteAddress(),
+                ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+        
+        return segmentBytes.length;
     }
 
     private void deliverToUpperLayer() {
@@ -219,6 +242,7 @@ public class TransportLayer {
         private static final int TIMEOUT = 4000;
         MySocket socket;
         boolean connected = false;
+        int receiversWindowSize;
         private ArrayList<Segment> toSend;
         private ArrayList<Segment> sentSegments;
         private ArrayList<Timer> segTimers;
@@ -229,8 +253,14 @@ public class TransportLayer {
             sentSegments = new ArrayList<Segment>();
             toSend = new ArrayList<Segment>();
             segTimers = new ArrayList<Timer>();
+        }
 
+        public int getReceiversWindowSize() {
+            return receiversWindowSize;
+        }
 
+        public void setReceiversWindowSize(int newSize) {
+            receiversWindowSize = newSize;
         }
 
         public void startTimer(Segment s){
@@ -241,6 +271,10 @@ public class TransportLayer {
             synchronizedTimers().add(t);
             synchronizedSentSegments().add(s);
 
+        }
+
+        public ArrayList<Segment> synchronizedToSendSegments(){
+            return (ArrayList<Segment>)Collections.synchronizedList(toSend);
         }
 
         public ArrayList<Segment> synchronizedSentSegments(){
@@ -280,7 +314,6 @@ public class TransportLayer {
             public Segment getSegment(){
                 return seg;
             }
-
         }
     }
 }
