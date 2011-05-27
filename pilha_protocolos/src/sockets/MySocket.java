@@ -7,12 +7,11 @@ package sockets;
 
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import pdu.Segment;
 import pilha_protocolos.Utilities;
 import stack.ProtocolStack;
 import stack.TransportLayer;
+import stack.TransportLayer.SegmentWrapper;
 
 
 /**
@@ -28,7 +27,7 @@ public class MySocket {
     private int remotePort;
 
     private ArrayBlockingQueue<Segment> dataQueue;
-    private ArrayBlockingQueue<Segment> acceptQueue; //Segmentos usados  SOMENTE para ACCEPT
+    private ArrayBlockingQueue<SegmentWrapper> acceptQueue; //Segmentos usados  SOMENTE para ACCEPT
 
     private int sequenceNumber;
 
@@ -44,10 +43,19 @@ public class MySocket {
         this.remotePort = remotePort;
 
         dataQueue = new ArrayBlockingQueue<Segment>(QUEUE_CAPACITY);
-        acceptQueue = new ArrayBlockingQueue<Segment>(2);
+        acceptQueue = new ArrayBlockingQueue<SegmentWrapper>(2);
 
         //Inicia o numero de sequencia...
         sequenceNumber = new Random().nextInt(SEQ_LIMIT);
+    }
+
+    /**
+     * Construtor do socket do lado servidor
+     * @param localAddr
+     * @param localPort Porta para ouvir conexoes
+     */
+    public MySocket(String localAddr, int localPort) {
+        this(localAddr, localPort, null, -1);
     }
 
     /**
@@ -57,6 +65,9 @@ public class MySocket {
      * @return numero de bytes enviados
      */
     public int send(byte[] data) {
+        // Se o socket servidor ainda nao aceitou uma conexao
+        // nao ha como enviar dados
+        if(remoteAddress == null) return -1;
         Segment segment = new Segment(localPort, remotePort, data,
                 ProtocolStack.TRASNPORT_PROTOCOL_RDT);
 
@@ -71,19 +82,38 @@ public class MySocket {
      * @return byte[] Dados recebidos da conexao
      */
     public byte[] recieve() {
+        // Nao tem motivo para ficar bloqueado esperando por algum dado
+        // se ainda nao ha uma conexao estabelecida
+        if(remoteAddress == null) {
+            Utilities.log(Utilities.TRANSPORT_TAG,
+                    "ATENCAO: Metodo receive chamado antes de accept\n"
+                    + "primeiro aceite uma conexao com o metodo accept()");
+            return null;
+        }
         return dequeueData().getData();
     }
 
     /*
-     *
+     * Aguarda por uma nova conexao vinda de um cliente
      */
     public void accept(){
-        Segment s = null;
+        if(remoteAddress != null) {
+            //Conexao do socket ja estabelecida
+            Utilities.log(Utilities.TRANSPORT_TAG,
+                    "ATENCAO: Conexao com o cliente ja estabelecida ou"
+                    + "nao e um socket servidor!!");
+            return;
+        }
+        SegmentWrapper sw = null;
         try {
-            s = acceptQueue.take();
+            sw = acceptQueue.take();
+            Segment s = sw.segment;
+            //Configura o socket para se conectar com o cliente
+            remotePort = s.getSourcePort();
+            remoteAddress = sw.fromAddr;
         } catch (InterruptedException ex) {
             Utilities.logException(ex);
-        }finally{
+        } finally{
             Utilities.log("no_filter", "Segmentos na fila accept:%d", acceptQueue.size());
 
         }
@@ -136,11 +166,9 @@ public class MySocket {
      *
      * @return true se o segmento foi adicionado na fila
      */
-    public boolean enqueueAcceptData(Segment s){
-        return acceptQueue.offer(s);
+    public boolean enqueueAcceptData(SegmentWrapper sw){
+        return acceptQueue.offer(sw);
     }
-
-
 
     /**
      * Retorna o primeiro segmento da fila
@@ -159,7 +187,5 @@ public class MySocket {
         } finally {
             return s;
         }
-    }
-
- 
+    } 
 }

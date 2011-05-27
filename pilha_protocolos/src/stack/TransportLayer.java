@@ -95,6 +95,8 @@ public class TransportLayer {
 
         // Seta a flag SYN para o estabelecimento da conexao
         connectSegment.setSYN(true);
+        // O valor no campo ack e valido
+        connectSegment.setAckValid(true);
         // Envia pacote para requisitar conexao
         send(socket.getLocalPort(), connectSegment);
 
@@ -146,7 +148,7 @@ public class TransportLayer {
 
     }
 
-    public void receive(Segment segment) {
+    public void receive(Segment segment, String fromAddr) {
         if(segment.getSYN()) {
             //Estabelecimento de conexao
             if(segment.getAck() == 0 && server != null) {
@@ -162,7 +164,11 @@ public class TransportLayer {
                                              new byte[1], //manda 1 byte
                                              0, //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
-                server.enqueueAcceptData(segment);
+                s.setAckNum(ackNum);
+                s.setAckValid(true);
+                SegmentWrapper sw = new SegmentWrapper(segment, fromAddr);
+                //Coloca requisicao de conexao na fila do accept
+                server.enqueueAcceptData(sw);
                 send(segment.getSourcePort(),s);
 
 
@@ -172,17 +178,40 @@ public class TransportLayer {
                 
                 //enviar ultimo ACK (flag SYN desativada)
                 int ackNum = segment.getSeqNumber() + 1;
+
+                Segment s = new Segment(segment.getDestPort(),
+                                             segment.getSourcePort(),
+                                             segment.getDestPort(),
+                                             ackNum, // O primeiro ack e zero
+                                             new byte[1], //manda 1 byte
+                                             0, //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                s.setAckValid(true);
+                send(segment.getSourcePort(),s);
             } else {
                 //fodeu total
                 Utilities.printError("3-way handshake - Estado invalido");
             }
         } else {
             if(segment.getData().length == 1) {
-                // Segmento de ack apenas, sem dados
-                //TODO reconhecer segmentos enviados
+                if(segment.isAckValid()){
+                    /*ignora, somente ack*/
+                } else {
+                    // TODO envia o tamanho da janela de cong.
+                }
             }
             //TODO deliver to upper layer na camada de transporte
             deliverToUpperLayer();
+        }
+    }
+
+    public static class SegmentWrapper {
+        public final Segment segment;
+        public final String fromAddr;
+
+        public SegmentWrapper(Segment s, String fA) {
+            segment = s;
+            fromAddr = fA;
         }
     }
 

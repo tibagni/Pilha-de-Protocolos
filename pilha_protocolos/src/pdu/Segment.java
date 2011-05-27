@@ -23,8 +23,9 @@ public class Segment implements Serializable {
     private int protocol;
     
     // Flags
-    private boolean syn;
-    private boolean fin;
+    private boolean syn = false;
+    private boolean fin = false;
+    private boolean ackValid = false;
 
     public Segment(int srcPort, int dstPort, int seq, int ack, byte[] data, 
             int windowSze, int proto) {
@@ -63,7 +64,13 @@ public class Segment implements Serializable {
     public byte[] getData(){
         return data;
     }
+    public boolean isAckValid() {
+        return ackValid;
+    }
 
+    public void setAckValid(boolean isAckValid) {
+        ackValid = isAckValid;
+    }
     public void setAckNum(int ackNum) {
         this.ackNum = ackNum;
     }

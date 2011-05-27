@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.Set;
 import pdu.Datagram;
 import pdu.Datagram.TTLException;
+import pdu.Segment;
 import pilha_protocolos.Utilities;
 
 /**
@@ -169,7 +170,7 @@ public class NetworkLayer implements Runnable, Serializable {
                         datagramFragments.remove(datagram.getDatagramId());
                         fragments = null;
                     } catch(Exception ex) {
-                        ex.printStackTrace();
+                        Utilities.logException(ex);
                     }
                 }
             }
@@ -210,9 +211,8 @@ public class NetworkLayer implements Runnable, Serializable {
 
         switch(datagram.getUpperLayerProtocol()) {
             case ProtocolStack.TRASNPORT_PROTOCOL_RDT:
-                Utilities.log(Utilities.NETWORK_TAG, "Mensagem RDT recebida");
-                Utilities.print(new String(datagram.getData()));
-                Utilities.print("Tamanho: %d", datagram.getData().length);
+                Segment seg = (Segment) Utilities.toObject(datagram.getData());
+                TransportLayer.getInstance().receive(seg, datagram.getSource());
                 break;
             case ProtocolStack.TRASNPORT_PROTOCOL_UDT:
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem UDT recebida");
