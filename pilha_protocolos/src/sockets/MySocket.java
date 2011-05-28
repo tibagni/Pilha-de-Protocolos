@@ -32,7 +32,7 @@ public class MySocket {
     private int sequenceNumber;
 
     // Capacidade da fila de dados
-    private static final int QUEUE_CAPACITY = 10;
+    public static final int QUEUE_CAPACITY = 10;
 
     private static final int SEQ_LIMIT = 65000;
 
@@ -56,6 +56,10 @@ public class MySocket {
      */
     public MySocket(String localAddr, int localPort) {
         this(localAddr, localPort, null, -1);
+    }
+
+    public void bind(){
+        TransportLayer.getInstance().connect(this);
     }
 
     /**
@@ -119,6 +123,10 @@ public class MySocket {
         }
     }
 
+    public void bindServer(){
+        TransportLayer.getInstance().registerServerSocket(this);
+    }
+
     /**
      * Close socket
      */
@@ -148,6 +156,10 @@ public class MySocket {
 
     public void setSeqNumber(int newSeq) {
         sequenceNumber = newSeq;
+    }
+
+    public int getWindowSize() {
+        return dataQueue.remainingCapacity();
     }
 
     /**

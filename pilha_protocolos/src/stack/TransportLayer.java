@@ -8,6 +8,8 @@ package stack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import pdu.Segment;
@@ -31,6 +33,7 @@ public class TransportLayer {
     private HashMap<Integer, SocketWrapper> sockets;
     private MySocket server = null;
 
+
     private static TransportLayer transportLayer = null;
 
     private TransportLayer() {
@@ -51,9 +54,8 @@ public class TransportLayer {
      *
      * @return HashMap de sockets seguro (Thread-safe)
      */
-    private HashMap<Integer, SocketWrapper> synchronizedSockets() {
-        return (HashMap<Integer, SocketWrapper>)
-                Collections.synchronizedMap(sockets);
+    private Map<Integer, SocketWrapper> synchronizedSockets() {
+        return Collections.synchronizedMap(sockets);
     }
 
     /**
@@ -69,14 +71,9 @@ public class TransportLayer {
             return false;
         }
         //Rgister socket
-        SocketWrapper registeredSocket = synchronizedSockets().put(socket.getLocalPort(),
+        synchronizedSockets().put(socket.getLocalPort(),
                 new SocketWrapper(socket));
-        if(registeredSocket == null) {
-            //Nao foi possivel registrar o socket...
-            // Fecha a conexao RDT (TCP)
-            closeRDTConnection();
-            return false;
-        }
+        
         //Comeca o 3-way handshake
         return connectRDT(socket);
     }
@@ -90,7 +87,7 @@ public class TransportLayer {
                                              socket.getSeqNumber(),
                                              0, // O primeiro ack e zero
                                              new byte[1], //manda 1 byte
-                                             0, //window size
+                                             socket.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
 
         // Seta a flag SYN para o estabelecimento da conexao
@@ -103,15 +100,29 @@ public class TransportLayer {
         return true;
     }
 
-    private void closeRDTConnection() {
+    private void closeRDTConnection(int portMap,MySocket socket) {
         // TODO encerra a conexao TCP
+        Segment s = new Segment(socket.getLocalPort(),
+                                             socket.getRemotePort(),
+                                             socket.getSeqNumber(),
+                                             0, // O primeiro ack e zero
+                                             new byte[1], //manda 1 byte
+                                             server.getWindowSize(), //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+        s.setFIN(true);
+
+        send(portMap,s);
     }
 
     public void disconnect(int portMap) {
+        closeRDTConnection(portMap,synchronizedSockets().get(portMap).socket);
         //Remove o socket da lista...
         synchronizedSockets().remove(portMap);
         //Encerra a conexao RDT (TCP)
-        closeRDTConnection();
+        
+    }
+    public void registerSocket(MySocket socket){
+        synchronizedSockets().put(socket.getLocalPort(), new SocketWrapper(socket));
     }
 
     /**
@@ -121,21 +132,20 @@ public class TransportLayer {
      * @param segment Segmento a ser enviado
      * @return numero de bytes enviados, -1 em caso de falha
      */
-    public int send(int portMap, Segment segment) {
+    public synchronized int send(int portMap, Segment segment) {
         if(!synchronizedSockets().containsKey(portMap)) return -1;
 
         MySocket socket = (MySocket) synchronizedSockets().get(portMap).socket;
         segment.setSeqNumber(socket.getSeqNumber());
+        segment.setWindowSize(socket.getWindowSize());
 
-        //TODO dividir o segmento para enviar
-
-        // Loop enviando todos os segmentos
         return sendRDT(segment);
     }
 
     public boolean registerServerSocket(MySocket s){
         if(server == null){
             server = s;
+            this.synchronizedSockets().put(s.getLocalPort(), new SocketWrapper(server));
             return true;
         } else {
             return false;
@@ -145,19 +155,29 @@ public class TransportLayer {
     private int sendRDT(Segment seg) {
         SocketWrapper sw = synchronizedSockets().get(seg.getSourcePort());
         // Adiciona na lista de segmentos a serem enviados
-        sw.synchronizedToSendSegments().add(seg);
-        if (sw.getReceiversWindowSize() < Utilities.getObjectSize(seg)) {
+        
+        if (sw.getReceiversWindowSize() < 1 && seg.getData().length > 1) {
+            //Envia segmentos de 1 byte para consultar tamanho da janela do receptor
+
             //Controle de fluxo!!! Nao envia se a janela do receptor estiver
             //cheia, segmento fica armazenado em toSend!
 
             //TODO inicia uma thread que fica verificando o tamanho da janela
             // a cada instante de tempo e envia os segmentos pendentes quando der
+            if(!sw.synchronizedToSendSegments().contains(seg)){
+                sw.synchronizedToSendSegments().add(seg);
+            }
+            sw.startCheckWindowSize();
+
+
             return 0;
         }
         // Inicia o timer relacionado ao segmento
         sw.startTimer(seg);
         //Agora o segmento pode ser retirado da fila de pendentes (toSend)
-        sw.synchronizedToSendSegments().remove(seg);
+        if(sw.synchronizedToSendSegments().contains(seg)){
+            sw.synchronizedToSendSegments().remove(seg);
+        }
 
         //Envia segmento para a camada de rede
         byte[] segmentBytes = Utilities.toByteArray(seg);
@@ -182,10 +202,10 @@ public class TransportLayer {
                 //Enviar SYNACK (flag SYN continua ativada)
                 Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
-                                             segment.getDestPort(),
+                                             server.getSeqNumber(),
                                              0, // O primeiro ack e zero
                                              new byte[1], //manda 1 byte
-                                             0, //window size
+                                             server.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                 s.setAckNum(ackNum);
                 s.setAckValid(true);
@@ -197,20 +217,22 @@ public class TransportLayer {
 
             } else if(segment.getAck() == segment.getSeqNumber() + 1) {
                 //Ack de pedido de conexao, conexao estabelecida
-                synchronizedSockets().get(segment.getDestPort()).connected = true;
+               SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
+               sw.connected = true;
                 
                 //enviar ultimo ACK (flag SYN desativada)
                 int ackNum = segment.getSeqNumber() + 1;
 
                 Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
-                                             segment.getDestPort(),
-                                             ackNum, // O primeiro ack e zero
+                                             sw.socket.getSeqNumber(),
+                                             ackNum,
                                              new byte[1], //manda 1 byte
-                                             0, //window size
+                                             sw.socket.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                 s.setAckValid(true);
                 send(segment.getSourcePort(),s);
+
             } else {
                 //fodeu total
                 Utilities.printError("3-way handshake - Estado invalido");
@@ -220,12 +242,48 @@ public class TransportLayer {
                 if(segment.isAckValid()){
                     /*ignora, somente ack*/
                 } else {
-                    // TODO envia o tamanho da janela de cong.
+                    SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
+                    int ackNum = segment.getSeqNumber() + 1;
+                    Segment s = new Segment(segment.getDestPort(),
+                                             segment.getSourcePort(),
+                                             sw.socket.getSeqNumber(),
+                                             ackNum, // O primeiro ack e zero
+                                             new byte[1], //manda 1 byte
+                                             sw.socket.getWindowSize(), //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                    //Seta valor de ack valido para o receptor ignorar o pacote
+                    s.setAckValid(true);
+                    send(segment.getSourcePort(), s);
                 }
             }
             //TODO deliver to upper layer na camada de transporte
             deliverToUpperLayer();
         }
+        SocketWrapper sw = synchronizedSockets().get(segment.getDestPort());
+        //Atualiza tamanho da janela do receptor
+        sw.setReceiversWindowSize(segment.getWindowSize());
+
+        if(segment.getWindowSize() > 0 && sw.synchronizedToSendSegments().size() > 0){
+            sw.stopCheckWindowSize();
+
+            for(Segment s : sw.synchronizedToSendSegments()){
+                send(s.getDestPort(),s);
+            }
+        }
+        Segment segToRemove = null;
+        if(segment.isAckValid()){
+
+            synchronized(sw.synchronizedSentSegments()){
+                for(Segment s : sw.synchronizedSentSegments()){
+                    if(s.getSeqNumber() + segment.getData().length == segment.getAck()){
+                        segToRemove = s;
+                    }
+                }
+            }
+        }
+        if(sw != null)
+            sw.stopTimer(segToRemove);
+
     }
 
     public static class SegmentWrapper {
@@ -240,12 +298,15 @@ public class TransportLayer {
 
     private class SocketWrapper {
         private static final int TIMEOUT = 4000;
+        private static final int TIMEOUT_WINDOW = 500;
         MySocket socket;
         boolean connected = false;
-        int receiversWindowSize;
+        int receiversWindowSize = MySocket.QUEUE_CAPACITY;
         private ArrayList<Segment> toSend;
         private ArrayList<Segment> sentSegments;
         private ArrayList<Timer> segTimers;
+        private Timer timerCheckWindowSize = null;
+
 
         
 
@@ -253,14 +314,43 @@ public class TransportLayer {
             sentSegments = new ArrayList<Segment>();
             toSend = new ArrayList<Segment>();
             segTimers = new ArrayList<Timer>();
+            this.socket = socket;
+
+        }
+        public void startCheckWindowSize(){
+            if(timerCheckWindowSize != null) return;
+
+            timerCheckWindowSize = new Timer();
+
+            timerCheckWindowSize.schedule(new TimerTask(){
+                public void run(){
+
+                    Segment s = new Segment(socket.getLocalPort(),
+                                             socket.getRemotePort(),
+                                             socket.getSeqNumber(),
+                                             0,
+                                             new byte[1], //manda 1 byte
+                                             socket.getWindowSize(), //window size
+                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                    send(socket.getRemotePort(),s);
+                }
+            }, TIMEOUT_WINDOW, TIMEOUT_WINDOW + 1);
+        }
+        public void stopCheckWindowSize(){
+            timerCheckWindowSize.cancel();
+            timerCheckWindowSize = null;
         }
 
         public int getReceiversWindowSize() {
-            return receiversWindowSize;
+            synchronized(this){
+                return receiversWindowSize;
+            }
         }
 
         public void setReceiversWindowSize(int newSize) {
-            receiversWindowSize = newSize;
+            synchronized(this){
+                receiversWindowSize = newSize;
+            }
         }
 
         public void startTimer(Segment s){
@@ -273,17 +363,16 @@ public class TransportLayer {
 
         }
 
-        public ArrayList<Segment> synchronizedToSendSegments(){
-            return (ArrayList<Segment>)Collections.synchronizedList(toSend);
+        public List<Segment> synchronizedToSendSegments(){
+            return Collections.synchronizedList(toSend);
         }
 
-        public ArrayList<Segment> synchronizedSentSegments(){
-            return (ArrayList<Segment>)Collections.synchronizedList(sentSegments);
+        public List<Segment> synchronizedSentSegments(){
+            return Collections.synchronizedList(sentSegments);
         }
-        public ArrayList<Timer> synchronizedTimers(){
-            return (ArrayList<Timer>)Collections.synchronizedList(segTimers);
+        public List<Timer> synchronizedTimers(){
+            return Collections.synchronizedList(segTimers);
         }
-
         public void stopTimer(Segment s){
             int index = synchronizedSentSegments().indexOf(s);
 

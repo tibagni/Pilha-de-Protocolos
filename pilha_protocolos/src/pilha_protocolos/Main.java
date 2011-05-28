@@ -7,6 +7,7 @@ package pilha_protocolos;
 
 
 
+import sockets.MySocket;
 import stack.ProtocolStack;
 
 /**
@@ -14,6 +15,7 @@ import stack.ProtocolStack;
  * @author belitos
  */
 public class Main {
+
 
     /**
      * @param args the command line arguments
@@ -29,9 +31,21 @@ public class Main {
         /*
          * Dont confuse with java.util.Stack!
          */
-        ProtocolStack s = new ProtocolStack(args[0],args[1]);
 
-        s.send();
+        ProtocolStack s = new ProtocolStack(args[0],args[1]);
+        if(args[1].equals("1")){
+            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),8000);
+            socket.bindServer();
+            socket.accept();
+            System.out.println("conectou com o server");
+        }else{
+            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),123, 
+                    "1", 8000);
+            socket.bind();
+            System.out.println("cliente iniciou a conexao");
+        }
+
+        //s.send();
 
 
     }
