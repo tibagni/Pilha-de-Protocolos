@@ -158,4 +158,14 @@ public class Segment implements Serializable {
         hash = 79 * hash + this.protocol;
         return hash;
     }
+
+    @Override
+    public String toString() {
+        return "Segment{" + "sourcePort=" + sourcePort +
+                "destPort=" + destPort + "seqNumber=" + seqNumber +
+                "ackNum=" + ackNum + "data=" + data + "windowSize=" + windowSize +
+                "protocol=" + protocol + "syn=" + syn + "fin=" + fin +
+                "ackValid=" + ackValid + '}';
+    }
+
 }

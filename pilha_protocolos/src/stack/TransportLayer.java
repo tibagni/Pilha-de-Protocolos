@@ -162,7 +162,7 @@ public class TransportLayer {
             //Controle de fluxo!!! Nao envia se a janela do receptor estiver
             //cheia, segmento fica armazenado em toSend!
 
-            //TODO inicia uma thread que fica verificando o tamanho da janela
+            // inicia uma thread que fica verificando o tamanho da janela
             // a cada instante de tempo e envia os segmentos pendentes quando der
             if(!sw.synchronizedToSendSegments().contains(seg)){
                 sw.synchronizedToSendSegments().add(seg);
@@ -192,10 +192,12 @@ public class TransportLayer {
     }
 
     public void receive(Segment segment, String fromAddr) {
+        System.out.printf(segment.toString());
         if(segment.getSYN()) {
             //Estabelecimento de conexao
             if(segment.getAck() == 0 && server != null) {
                 //Requisicao de conexao, enviar ACK
+                Utilities.print("recebeu syn, envia ack");
                 int ackNum = segment.getSeqNumber() + 1;
                 // Estabelecer conexao deste lado (servidor)
                 synchronizedSockets().get(segment.getDestPort()).connected = true;
@@ -203,20 +205,22 @@ public class TransportLayer {
                 Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
                                              server.getSeqNumber(),
-                                             0, // O primeiro ack e zero
+                                             ackNum, // O primeiro ack e zero
                                              new byte[1], //manda 1 byte
                                              server.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                 s.setAckNum(ackNum);
                 s.setAckValid(true);
+                s.setSYN(true);
                 SegmentWrapper sw = new SegmentWrapper(segment, fromAddr);
                 //Coloca requisicao de conexao na fila do accept
                 server.enqueueAcceptData(sw);
-                send(segment.getSourcePort(),s);
-
-
-            } else if(segment.getAck() == segment.getSeqNumber() + 1) {
+                System.out.printf(s.toString());
+                send(s.getSourcePort(), s);
+            } else if(segment.getAck() == 
+                    synchronizedSockets().get(segment.getDestPort()).socket.getSeqNumber() + 1) {
                 //Ack de pedido de conexao, conexao estabelecida
+                Utilities.print("recebeu ack, conexao estabelecida");
                SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
                sw.connected = true;
                 
@@ -373,12 +377,15 @@ public class TransportLayer {
         public List<Timer> synchronizedTimers(){
             return Collections.synchronizedList(segTimers);
         }
+        
         public void stopTimer(Segment s){
             int index = synchronizedSentSegments().indexOf(s);
 
             if(index != -1){
-                synchronizedSentSegments().remove(index); // remove segmento
+                System.out.println("entrou!!!!!!!!!");
+                synchronizedSentSegments().remove(index);
                 synchronizedTimers().remove(index).cancel(); //para timer
+
             }
         }
 
