@@ -7,10 +7,7 @@ package pilha_protocolos;
 
 
 
-import application.FileTransfer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import sockets.MySocket;
+import application.App;
 import stack.ProtocolStack;
 
 /**
@@ -36,30 +33,32 @@ public class Main {
          */
 
         ProtocolStack s = new ProtocolStack(args[0],args[1]);
-        if(args[1].equals("1")){/*
-            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),8000);
-            socket.bindServer();
-            socket.accept();*/
-            FileTransfer tran = new FileTransfer(8000);
-            tran.receive();
-            tran.receive();
-            System.out.println("conectou com o server");
-        }else{/*
-            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),123, 
-                    "1", 8000);
-            socket.bind();
-            socket.send("Sou bom, e ta funfando".getBytes());*/
-            FileTransfer tranCli = new FileTransfer("1",8000,123);
-            tranCli.prepareSentMahNizzle("vai.txt");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            tranCli.send("vai.txt");
-            System.out.println("cliente iniciou a conexao");
-        }
+//        if(args[1].equals("1")){/*
+//            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),8000);
+//            socket.bindServer();
+//            socket.accept();*/
+//            FileTransfer tran = new FileTransfer(8000);
+//            tran.receive();
+//            tran.receive();
+//            System.out.println("conectou com o server");
+//        }else{/*
+//            MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),123,
+//                    "1", 8000);
+//            socket.bind();
+//            socket.send("Sou bom, e ta funfando".getBytes());*/
+//            FileTransfer tranCli = new FileTransfer("1",8000,123);
+//            tranCli.prepareSentMahNizzle("vai.txt");
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException ex) {
+//                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//            tranCli.send("vai.txt");
+//            System.out.println("cliente iniciou a conexao");
+//        }
 
+        App app = new App();
+        app.startApp();
         //s.send();
 
 
