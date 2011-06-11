@@ -42,6 +42,7 @@ public class Main {
             MySocket socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),123, 
                     "1", 8000);
             socket.bind();
+            socket.send("Sou bom, e ta funfando".getBytes());
             System.out.println("cliente iniciou a conexao");
         }
 
