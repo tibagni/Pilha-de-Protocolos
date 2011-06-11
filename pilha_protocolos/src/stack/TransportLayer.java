@@ -190,10 +190,8 @@ public class TransportLayer {
         return segmentBytes.length;
     }
 
-    private void deliverToUpperLayer(byte[] data) {
-
-        System.out.printf("%s\n\n\n\n\n", new String(data));
-
+    private void deliverToUpperLayer(Segment s) {
+        this.synchronizedSockets().get(s.getDestPort()).socket.enqueueData(s);
     }
 
     public void receive(Segment segment, String fromAddr) {
@@ -268,7 +266,7 @@ public class TransportLayer {
                 }
             }
             //TODO deliver to upper layer na camada de transporte
-            deliverToUpperLayer(segment.getData());
+            deliverToUpperLayer(segment);
         }
         SocketWrapper sw = synchronizedSockets().get(segment.getDestPort());
         //Atualiza tamanho da janela do receptor
