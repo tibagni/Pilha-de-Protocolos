@@ -168,8 +168,6 @@ public class TransportLayer {
                 sw.synchronizedToSendSegments().add(seg);
             }
             sw.startCheckWindowSize();
-
-
             return 0;
         }
 
@@ -195,7 +193,6 @@ public class TransportLayer {
     }
 
     public void receive(Segment segment, String fromAddr) {
-        System.out.printf(segment.toString());
         if(segment.getSYN()) {
             //Estabelecimento de conexao
             if(segment.getAck() == 0 && server != null) {
@@ -218,7 +215,6 @@ public class TransportLayer {
                 SegmentWrapper sw = new SegmentWrapper(segment, fromAddr);
                 //Coloca requisicao de conexao na fila do accept
                 server.enqueueAcceptData(sw);
-                System.out.printf(s.toString());
                 send(s.getSourcePort(), s);
             } else if(segment.getAck() == 
                     synchronizedSockets().get(segment.getDestPort()).socket.getSeqNumber() + 1) {
@@ -249,7 +245,6 @@ public class TransportLayer {
             if(segment.getData().length == 1) {
                 if(segment.isAckValid()){
                     /*ignora, somente ack*/
-                    System.out.printf("443434244223\ndjadjoiad\nsjdidajoas\n");
                 } else {
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
                     int ackNum = segment.getSeqNumber() + 1;
@@ -387,7 +382,6 @@ public class TransportLayer {
             int index = synchronizedSentSegments().indexOf(s);
 
             if(index != -1){
-                System.out.println("entrou!!!!!!!!!");
                 synchronizedSentSegments().remove(index);
                 synchronizedTimers().remove(index).cancel(); //para timer
 

@@ -21,13 +21,13 @@ import java.io.Serializable;
 public class Utilities {
     
     // ativar logs (true)
-    private static final boolean LOG    = true;
+    private static final boolean LOG    = false;
     
     // ativar prints (true)
-    private static final boolean PRINT  = true;
+    private static final boolean PRINT  = false;
 
     // ativar logs de exceptions (true)
-    private static final boolean LOG_EX = true;
+    private static final boolean LOG_EX = false;
 
     // LOG tags
     public static final String LINK_TAG = "LinkLayer";
