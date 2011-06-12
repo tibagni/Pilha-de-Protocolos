@@ -40,7 +40,7 @@ public class FileTransfer{
 
     public void prepareSentMahNizzle(String fileFuckingName){
         File f = new File(fileFuckingName);
-        actualFile = new FileInfo("cu cum taxo",f.length(),fileFuckingName);
+        actualFile = new FileInfo("cu com taxo",f.length(),fileFuckingName);
 
         socket.send(Utilities.toByteArray(actualFile));
     }
