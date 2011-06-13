@@ -77,9 +77,7 @@ public class LinkLayer implements Runnable{
 
     @Override
     public void finalize()
-    {
-
-        
+    {        
         socket.close();
     }
 
@@ -246,9 +244,6 @@ public class LinkLayer implements Runnable{
 
                     checksumEngine.reset();
 
-                    
-
-                   
 
                 } catch(ClassNotFoundException ex) {
                     // The link layer should not fail because some frame is broken
