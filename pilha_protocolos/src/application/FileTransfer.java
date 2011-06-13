@@ -8,6 +8,9 @@ package application;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import pilha_protocolos.Utilities;
 import sockets.MySocket;
 import stack.ProtocolStack;
@@ -33,14 +36,12 @@ public class FileTransfer{
         socket.bindServer();
         socket.accept();
         step = STEP_WAITING_TO_RECEIVE;
-            System.out.println("STEP_WAITING_TO_RECEIVE");
     }
 
     public FileTransfer(String logicaldDst, int portDst, int myPort){ //Sender
         socket = new MySocket(ProtocolStack.getLocalhost().getLogicalID(),myPort, logicaldDst, portDst);
         socket.bind();
         step = STEP_WAITING_TO_SEND;
-            System.out.println("STEP_WAITING_TO_SEND");
     }
 
     public void sendRequestToSend(String fileName){
@@ -49,7 +50,6 @@ public class FileTransfer{
 
         if (socket.send(Utilities.toByteArray(actualFile)) > 0) {
             step = STEP_WAITING_CONFIRMATION;
-            System.out.println("STEP_WAITING_CONFIRMATION");
         }
     }
 
@@ -62,33 +62,39 @@ public class FileTransfer{
         if (socket.send(resp.getBytes()) > 0) {
             result = true;
             step = STEP_TRANSFERRING;
-            System.out.println("STEP_TRANSFERRING");
         }
 
         return result;
     }
     public boolean sendFile(String fileName){
         File f = new File(fileName);
+        FileInputStream file = null;
         byte[] data = new byte[(int)f.length()];
         try {
-            FileInputStream file = new FileInputStream(fileName);
+            file = new FileInputStream(fileName);
             file.read(data);
         } catch (Exception ex) {
             Utilities.logException(ex);
             return false;
+        } finally {
+            try {
+                file.close();
+            } catch (IOException ex) {
+                Utilities.logException(ex);
+            }
         }
         if (socket.send(data) > 0) {
             step = STEP_TRANSFERRING;
-            System.out.println("STEP_TRANSFERRING");
         }
         return true;
     }
     public boolean receive(){
         FileInfo info = null;
+        FileOutputStream file = null;
         boolean result = false;
+        
         if(step == STEP_WAITING_TO_RECEIVE){
            step = STEP_PENDING_REQUEST;
-            System.out.println("STEP_PENDING_REQUEST");
            info = (FileInfo) Utilities.toObject(socket.recieve());
            actualFile = info;
            result = true; // FileInfo disponivel
@@ -99,7 +105,6 @@ public class FileTransfer{
                 result = true;
             } else {
                 step = STEP_WAITING_TO_SEND;
-            System.out.println("STEP_WAITING_TO_SEND");
                 result = false;
             }
         } else {
@@ -115,11 +120,17 @@ public class FileTransfer{
                 receivedFinal = concat(receivedFinal, receivedAux);
             }
             try {
-                FileOutputStream file = new FileOutputStream("rec"+actualFile.getName());
+                file = new FileOutputStream("rec"+actualFile.getName());
                 file.write(receivedFinal);
 
             } catch (Exception ex) {
                 Utilities.logException(ex);
+            } finally {
+                try {
+                    file.close();
+                } catch (IOException ex) {
+                    Utilities.logException(ex);
+                }
             }
         }
         return result;

@@ -21,13 +21,13 @@ import java.io.Serializable;
 public class Utilities {
     
     // ativar logs (true)
-    private static final boolean LOG    = false;
+    private static final boolean LOG    = true;
     
     // ativar prints (true)
-    private static final boolean PRINT  = false;
+    private static final boolean PRINT  = true;
 
     // ativar logs de exceptions (true)
-    private static final boolean LOG_EX = false;
+    private static final boolean LOG_EX = true;
 
     // LOG tags
     public static final String LINK_TAG = "LinkLayer";
@@ -38,7 +38,7 @@ public class Utilities {
     // FILTER (Mude o filtro antes da compilacao)
     // NO_FILTER imprime todos os logs (se LOG == true)
     private static final String NO_FILTER = "no_filter";
-    private static final String FILTER = NETWORK_TAG;
+    private static final String FILTER = TRANSPORT_TAG;
 
     public static int getObjectSize(Serializable o){
         byte[] bytes = null;
