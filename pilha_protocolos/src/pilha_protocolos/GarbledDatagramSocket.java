@@ -100,7 +100,7 @@ public class GarbledDatagramSocket extends DatagramSocket
 	    {
 		// packet is corrupted, select a byte and scramble it
 
-                System.out.printf("aqui\n\n\n");
+              //  System.out.printf("aqui\n\n\n");
 		int corrupt_ind = rand_gen.nextInt(p.getLength());
 // 		System.out.println("Add port: "+p.getAddress() + p.getPort());
 		
@@ -121,7 +121,7 @@ public class GarbledDatagramSocket extends DatagramSocket
 	    {
 		// packet is to be duplicated...so we call send twice.
 // 		System.out.println("pkt dup ed");
-		System.out.printf("duplo\n");
+		//System.out.printf("duplo\n");
 		super.send(p);
 		super.send(p);
 

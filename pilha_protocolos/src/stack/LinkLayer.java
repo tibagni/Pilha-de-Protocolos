@@ -44,7 +44,7 @@ public class LinkLayer implements Runnable{
        // Singleton class. Can't be instantiated outside.
 
         try {
-            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),30,30,40);
+            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),10,10,10);
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
@@ -130,6 +130,7 @@ public class LinkLayer implements Runnable{
             frameBytes = bos.toByteArray();
 
             aux = new byte[ProtocolStack.MAX_MTU_SIZE-ADLER_SIZE];
+
             System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
             
             for(int i = frameBytes.length; i < ProtocolStack.MAX_MTU_SIZE - ADLER_SIZE; i ++)
@@ -143,7 +144,7 @@ public class LinkLayer implements Runnable{
             byte[] chkSum = new Long(checksumEngine.getValue()).toString().getBytes();
             // Deixa o tamanho do checksum sempre em 8 bytes
             longSum = new byte[ADLER_SIZE];
-            if (chkSum.length > ADLER_SIZE) {
+            if (chkSum.length >= ADLER_SIZE) {
                 System.arraycopy(chkSum, 0, longSum, 0, ADLER_SIZE);
             } else if (chkSum.length < ADLER_SIZE) {
                 for (int i = chkSum.length; i < ADLER_SIZE; i++) {
@@ -188,12 +189,22 @@ public class LinkLayer implements Runnable{
 
                     byte[] result = new Long(checksumEngine.getValue()).toString().getBytes();
                     isCorrupted = false;
+                    byte[] longSum = new byte[ADLER_SIZE];
+                     if (result.length >= ADLER_SIZE) {
+                        System.arraycopy(result, 0, longSum, 0, ADLER_SIZE);
+                    } else if (result.length < ADLER_SIZE) {
+                        for (int i = result.length; i < ADLER_SIZE; i++) {
+                            longSum[i] = 0;
+                         }
+                    }
 
                     for(int i = 0; i < ADLER_SIZE; i++)
-                        if(result[i] != frame[i]) {
+                        if(longSum[i] != frame[i]) {
                             isCorrupted = true;
-                            System.err.print("merdaaaaaaaaaaaaaaaaa\n");
+                           // System.err.print("merdaaaaaaaaaaaaaaaaa\n");
                         }
+
+
 
                     //isCorrupted = false; // TODO fix CRC
 

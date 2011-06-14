@@ -8,6 +8,7 @@ package stack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -32,13 +33,14 @@ import pilha_protocolos.Utilities;
 public class TransportLayer {
     private HashMap<Integer, SocketWrapper> sockets;
     private MySocket server = null;
+    private boolean startingConnection;
 
 
     private static TransportLayer transportLayer = null;
 
     private TransportLayer() {
         sockets = new HashMap<Integer, SocketWrapper>();
-
+        startingConnection = false;
     }
 
     public static TransportLayer getInstance() {
@@ -95,7 +97,9 @@ public class TransportLayer {
         // O valor no campo ack e valido
         connectSegment.setAckValid(true);
         // Envia pacote para requisitar conexao
+        startingConnection = true;
         send(socket.getLocalPort(), connectSegment);
+        startingConnection = false;
 
         return true;
     }
@@ -133,13 +137,19 @@ public class TransportLayer {
      * @return numero de bytes enviados, -1 em caso de falha
      */
     public synchronized int send(int portMap, Segment segment) {
+        int retval;
         if(!synchronizedSockets().containsKey(portMap)) return -1;
         
         MySocket socket = (MySocket) synchronizedSockets().get(portMap).socket;
         segment.setSeqNumber(socket.getSeqNumber());
         segment.setWindowSize(socket.getWindowSize());
 
-        return sendRDT(segment);
+        retval = sendRDT(segment);
+        System.out.printf("SEND:%d-%d-%d\n\n\n\n",socket.getSeqNumber(),segment.getSeqNumber(),segment.getData().length);
+        if(socket.getSeqNumber() > socket.getSeqNumber() + segment.getData().length){ //Timers cant upgrade the seq number
+            socket.setSeqNumber(socket.getSeqNumber() + segment.getData().length);
+        }
+        return retval;
     }
 
     public boolean registerServerSocket(MySocket s){
@@ -171,7 +181,7 @@ public class TransportLayer {
             return 0;
         }
 
-        if(!seg.isAckValid()){
+        if(!seg.isAckValid() || startingConnection == true){
             // Inicia o timer relacionado ao segmento
             sw.startTimer(seg);
         }
@@ -250,7 +260,7 @@ public class TransportLayer {
             if(segment.getData().length == 1) {
                 if(segment.isAckValid()){
                     /*ignora, somente ack*/
-                    Utilities.log(Utilities.TRANSPORT_TAG, "recebi ack!!!!!");
+                //    Utilities.log(Utilities.TRANSPORT_TAG, "recebi ack!!!!!");
                 } else {
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
                     int ackNum = segment.getSeqNumber() + 1;
@@ -267,8 +277,9 @@ public class TransportLayer {
                     send(segment.getDestPort(), s);
                 }
             } else {
-                Utilities.log(Utilities.TRANSPORT_TAG, "else porra");
+               // Utilities.log(Utilities.TRANSPORT_TAG, "else porra");
                 //deliver to upper layer na camada de transporte
+
                 deliverToUpperLayer(segment);
                 // Envia ack do segmento
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
@@ -301,13 +312,16 @@ public class TransportLayer {
         }
         Segment segToRemove = null;
         if(segment.isAckValid()){
-            Utilities.log(Utilities.TRANSPORT_TAG, "ack valido");
+           // Utilities.log(Utilities.TRANSPORT_TAG, "ack valido");
             synchronized(sw.synchronizedSentSegments()){
-                for(Segment s : sw.synchronizedSentSegments()){
+                Iterator<Segment> it = sw.synchronizedSentSegments().iterator();
+                while(it.hasNext()){
+                    Segment s = it.next();
                     System.out.printf("%d-%d-%d-%d\n\n",s.getSeqNumber(),s.getData().length,segment.getAck(),segment.getData().length);
                     if(s.getSeqNumber() + s.getData().length == segment.getAck()){
                         segToRemove = s;
                         Utilities.log(Utilities.TRANSPORT_TAG, "removendo segmento " + s.toString());
+                        break;
                     }
                 }
             }
