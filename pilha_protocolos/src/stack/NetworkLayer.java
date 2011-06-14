@@ -93,10 +93,10 @@ public class NetworkLayer implements Runnable, Serializable {
         Datagram d = new Datagram(from, to, protocol, Datagram.TTL, datagramId, data);
 
         // Verifica se datagrama e maior que limit (MTU)
-        if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_LIMIT) {
+        if(pilha_protocolos.Utilities.getObjectSize(d) > limit - LinkLayer.ADLER_SIZE) {
             List<Datagram> fragments = new ArrayList<Datagram>();
             byte[] byteData = data;
-            int dataSize = limit - Datagram.MAX_HEADER_SIZE - LinkLayer.ADLER_LIMIT;
+            int dataSize = limit - Datagram.MAX_HEADER_SIZE - LinkLayer.ADLER_SIZE;
             int fragOffset = offset;
             while(byteData.length > dataSize) {
                 Utilities.log(Utilities.NETWORK_TAG, "Fragmento criado: %d", fragOffset);
