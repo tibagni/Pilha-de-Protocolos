@@ -188,7 +188,7 @@ public class LinkLayer implements Runnable{
                     socket.receive(receivedFrame);
                     frame = receivedFrame.getData();
 
-                    data =  Arrays.copyOfRange(frame, ADLER_SIZE, ProtocolStack.MAX_MTU_SIZE);
+                    data =  Arrays.copyOfRange(frame, ADLER_SIZE, frame.length);
                     checksumEngine.update(data, 0, data.length);
 
                     byte[] result = new Long(checksumEngine.getValue()).toString().getBytes();
@@ -210,29 +210,26 @@ public class LinkLayer implements Runnable{
 
 
 
-                    //isCorrupted = false; // TODO fix CRC
+                 //   isCorrupted = false; // TODO fix CRC
 
                     if(isCorrupted) {
-                        Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
-                        continue;
+                       Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
+                       continue;
                     }
 
                     // Getting the Object from the byte[]
-                    ByteArrayInputStream bis = new ByteArrayInputStream(data);
-                    ObjectInput in = new ObjectInputStream(bis);
+//                    ByteArrayInputStream bis = new ByteArrayInputStream(data);
+//                    ObjectInput in = new ObjectInputStream(bis);
 
                     // Now we have to cast the Object to a Frame
-                    f = (Frame) in.readObject();
+                    f = (Frame) Utilities.toObject(data);
 
                     deliverToNetworkLayer(f);
 
                     checksumEngine.reset();
-                } catch(ClassNotFoundException ex) {
-                    // The link layer should not fail because some frame is broken
-                    Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
-                    continue;
                 } catch(IOException ex) {
                     // The link layer should not fail because some frame is broken
+                    Utilities.logException(ex);
                     Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                     continue;
                 }

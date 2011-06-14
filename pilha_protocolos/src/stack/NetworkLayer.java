@@ -89,6 +89,7 @@ public class NetworkLayer implements Runnable, Serializable {
         // Pega next hop da routing table.
         Host nextHost = getHostInRoutingTable(to);
         if(nextHost == null) return;
+        
         int limit = ProtocolStack.getLocalhost().getLinkMtu(nextHost.getLogicalID());
         Datagram d = new Datagram(from, to, protocol, Datagram.TTL, datagramId, data);
 
@@ -275,7 +276,7 @@ public class NetworkLayer implements Runnable, Serializable {
         Map<String, NextHost> m = 
                 Collections.synchronizedMap(routingTable);
 
-        NextHost nextHost = new NextHost(hd, hops);
+        NextHost nextHost = new NextHost(nh, hops);
 
         if(hops > HOP_LIMIT) return false;
 

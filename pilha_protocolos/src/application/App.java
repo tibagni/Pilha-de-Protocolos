@@ -24,6 +24,7 @@ public class App {
             try {
                 synchronized (locker) {
                     executeCommand(input.nextLine());
+
                 }
             } catch (Exception e) {
                 printErr("Nao foi possivel executar comando\n"
