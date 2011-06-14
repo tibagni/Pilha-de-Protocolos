@@ -44,7 +44,7 @@ public class LinkLayer implements Runnable{
        // Singleton class. Can't be instantiated outside.
 
         try {
-            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),0,0,0);
+            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),30,30,40);
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
