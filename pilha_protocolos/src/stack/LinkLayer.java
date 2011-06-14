@@ -44,7 +44,7 @@ public class LinkLayer implements Runnable{
        // Singleton class. Can't be instantiated outside.
 
         try {
-            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),10,10,10);
+            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),0,0,0);
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
@@ -130,10 +130,14 @@ public class LinkLayer implements Runnable{
             frameBytes = bos.toByteArray();
 
             aux = new byte[ProtocolStack.MAX_MTU_SIZE-ADLER_SIZE];
-
-            System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
+            //System.err.printf("%d-%d\n\n\n",aux.length,frameBytes.length);
+            if(aux.length < frameBytes.length){
+                System.arraycopy(frameBytes, 0, aux, 0, aux.length);
+            } else {
+                System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
+            }
             
-            for(int i = frameBytes.length; i < ProtocolStack.MAX_MTU_SIZE - ADLER_SIZE; i ++)
+            for(int i = frameBytes.length; i < aux.length; i ++)
                 aux[i] = 0;          
 
             Checksum checksumEngine = new Adler32();

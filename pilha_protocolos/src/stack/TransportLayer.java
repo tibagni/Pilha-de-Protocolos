@@ -141,12 +141,14 @@ public class TransportLayer {
         if(!synchronizedSockets().containsKey(portMap)) return -1;
         
         MySocket socket = (MySocket) synchronizedSockets().get(portMap).socket;
-        segment.setSeqNumber(socket.getSeqNumber());
+        if(segment.getSeqNumber() == -1){
+            segment.setSeqNumber(socket.getSeqNumber());
+        }
         segment.setWindowSize(socket.getWindowSize());
 
         retval = sendRDT(segment);
         System.out.printf("SEND:%d-%d-%d\n\n\n\n",socket.getSeqNumber(),segment.getSeqNumber(),segment.getData().length);
-        if(socket.getSeqNumber() > socket.getSeqNumber() + segment.getData().length){ //Timers cant upgrade the seq number
+        if(socket.getSeqNumber() < segment.getSeqNumber() + segment.getData().length){ //Timers cant upgrade the seq number
             socket.setSeqNumber(socket.getSeqNumber() + segment.getData().length);
         }
         return retval;
@@ -260,7 +262,7 @@ public class TransportLayer {
             if(segment.getData().length == 1) {
                 if(segment.isAckValid()){
                     /*ignora, somente ack*/
-                //    Utilities.log(Utilities.TRANSPORT_TAG, "recebi ack!!!!!");
+                Utilities.log(Utilities.TRANSPORT_TAG, "recebi ack!!!!!");
                 } else {
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
                     int ackNum = segment.getSeqNumber() + 1;
@@ -279,24 +281,26 @@ public class TransportLayer {
             } else {
                // Utilities.log(Utilities.TRANSPORT_TAG, "else porra");
                 //deliver to upper layer na camada de transporte
-
-                deliverToUpperLayer(segment);
-                // Envia ack do segmento
-                    SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
-                    int ackNum = segment.getSeqNumber() + segment.getData().length;
-                    //sw.socket.setSeqNumber(ackNum);
-                    Segment s = new Segment(segment.getDestPort(),
-                                             segment.getSourcePort(),
-                                             sw.socket.getSeqNumber(),
-                                             ackNum, // O primeiro ack e zero
-                                             new byte[1], //manda 1 byte
-                                             sw.socket.getWindowSize(), //window size
-                                             ProtocolStack.TRASNPORT_PROTOCOL_RDT);
-                    //Seta valor de ack valido para o receptor ignorar o pacote
-                    s.setAckValid(true);
-                    s.setSYN(false);
-
-                    send(s.getSourcePort(),s);
+                SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
+                if(segment.getSeqNumber() > sw.getLastRecSeqNumber() ){
+                    deliverToUpperLayer(segment);
+                    // Envia ack do segmento
+                       // SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
+                        int ackNum = segment.getSeqNumber() + segment.getData().length;
+                        //sw.socket.setSeqNumber(ackNum);
+                        Segment s = new Segment(segment.getDestPort(),
+                                                 segment.getSourcePort(),
+                                                 sw.socket.getSeqNumber(),
+                                                 ackNum, // O primeiro ack e zero
+                                                 new byte[1], //manda 1 byte
+                                                 sw.socket.getWindowSize(), //window size
+                                                 ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+                        //Seta valor de ack valido para o receptor ignorar o pacote
+                        s.setAckValid(true);
+                        s.setSYN(false);
+                        sw.setLastRecSeqNumber(segment.getSeqNumber());
+                        send(s.getSourcePort(),s);
+                }
             }
         }
         SocketWrapper sw = synchronizedSockets().get(segment.getDestPort());
@@ -351,7 +355,7 @@ public class TransportLayer {
         private ArrayList<Segment> sentSegments;
         private ArrayList<Timer> segTimers;
         private Timer timerCheckWindowSize = null;
-
+        private int lastRecSeqNumber;
 
         
 
@@ -360,7 +364,14 @@ public class TransportLayer {
             toSend = new ArrayList<Segment>();
             segTimers = new ArrayList<Timer>();
             this.socket = socket;
+            lastRecSeqNumber = 0;
 
+        }
+        public int getLastRecSeqNumber(){
+            return lastRecSeqNumber;
+        }
+        public void setLastRecSeqNumber(int l){
+            lastRecSeqNumber = l;
         }
         public void startCheckWindowSize(){
             if(timerCheckWindowSize != null) return;

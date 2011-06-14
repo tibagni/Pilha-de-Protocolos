@@ -31,11 +31,12 @@ public class Segment implements Serializable {
             int windowSze, int proto) {
         sourcePort = srcPort;
         destPort = dstPort;
-        seqNumber = seq;
+        //seqNumber = seq;
         ackNum = ack;
         this.data = data;
         windowSize = windowSze;
         protocol = proto;
+        seqNumber = -1;
 
     }
     public Segment(int srcPort, int dstPort, byte[] data, int proto) {
