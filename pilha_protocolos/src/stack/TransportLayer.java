@@ -185,6 +185,8 @@ public class TransportLayer {
         byte[] segmentBytes = Utilities.toByteArray(seg);
         NetworkLayer.getInstance().send(segmentBytes, sw.socket.getRemoteAddress(),
                 ProtocolStack.TRASNPORT_PROTOCOL_RDT);
+
+        
         
         return segmentBytes.length;
     }
@@ -194,12 +196,14 @@ public class TransportLayer {
     }
 
     public void receive(final Segment segment, String fromAddr) {
+        System.out.printf("Recebeu:%s\n\n\n",segment);
         if(segment.getSYN()) {
             //Estabelecimento de conexao
             if(segment.getAck() == 0 && server != null) {
                 //Requisicao de conexao, enviar ACK
                 Utilities.print("recebeu syn, envia ack\n");
                 int ackNum = segment.getSeqNumber() + 1;
+
                 // Estabelecer conexao deste lado (servidor)
                 synchronizedSockets().get(segment.getDestPort()).connected = true;
                 //Enviar SYNACK (flag SYN continua ativada)
@@ -216,9 +220,9 @@ public class TransportLayer {
                 SegmentWrapper sw = new SegmentWrapper(segment, fromAddr);
                 //Coloca requisicao de conexao na fila do accept
                 server.enqueueAcceptData(sw);
-                send(s.getSourcePort(), s);
+                send(segment.getDestPort(), s);
             } else if(segment.getAck() == 
-                    synchronizedSockets().get(segment.getDestPort()).socket.getSeqNumber() + 1) {
+                 synchronizedSockets().get(segment.getDestPort()).socket.getSeqNumber() + 1) {
                 //Ack de pedido de conexao, conexao estabelecida
                 Utilities.print("recebeu ack, conexao estabelecida\n");
                SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
@@ -236,7 +240,7 @@ public class TransportLayer {
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                 s.setAckValid(true);
 
-                send(segment.getSourcePort(),s);
+                send(segment.getDestPort(),s);
 
             } else {
                 //fodeu total
@@ -249,7 +253,8 @@ public class TransportLayer {
                     Utilities.log(Utilities.TRANSPORT_TAG, "recebi ack!!!!!");
                 } else {
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
-                    int ackNum = segment.getSeqNumber() + 2;
+                    int ackNum = segment.getSeqNumber() + 1;
+                    //sw.socket.setSeqNumber(ackNum);
                     Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
                                              sw.socket.getSeqNumber(),
@@ -259,7 +264,7 @@ public class TransportLayer {
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                     //Seta valor de ack valido para o receptor ignorar o pacote
                     s.setAckValid(true);
-                    send(segment.getSourcePort(), s);
+                    send(segment.getDestPort(), s);
                 }
             } else {
                 Utilities.log(Utilities.TRANSPORT_TAG, "else porra");
@@ -267,7 +272,8 @@ public class TransportLayer {
                 deliverToUpperLayer(segment);
                 // Envia ack do segmento
                     SocketWrapper sw =  synchronizedSockets().get(segment.getDestPort());
-                    int ackNum = segment.getSeqNumber() + segment.getData().length + 1;
+                    int ackNum = segment.getSeqNumber() + segment.getData().length;
+                    //sw.socket.setSeqNumber(ackNum);
                     Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
                                              sw.socket.getSeqNumber(),
@@ -278,7 +284,8 @@ public class TransportLayer {
                     //Seta valor de ack valido para o receptor ignorar o pacote
                     s.setAckValid(true);
                     s.setSYN(false);
-                    send(segment.getSourcePort(),s);
+
+                    send(s.getSourcePort(),s);
             }
         }
         SocketWrapper sw = synchronizedSockets().get(segment.getDestPort());
@@ -297,7 +304,8 @@ public class TransportLayer {
             Utilities.log(Utilities.TRANSPORT_TAG, "ack valido");
             synchronized(sw.synchronizedSentSegments()){
                 for(Segment s : sw.synchronizedSentSegments()){
-                    if(s.getSeqNumber() + segment.getData().length == segment.getAck()){
+                    System.out.printf("%d-%d-%d-%d\n\n",s.getSeqNumber(),s.getData().length,segment.getAck(),segment.getData().length);
+                    if(s.getSeqNumber() + s.getData().length == segment.getAck()){
                         segToRemove = s;
                         Utilities.log(Utilities.TRANSPORT_TAG, "removendo segmento " + s.toString());
                     }
