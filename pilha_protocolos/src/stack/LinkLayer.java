@@ -32,10 +32,7 @@ public class LinkLayer implements Runnable{
 
     private static LinkLayer linkLayer = null;
     private GarbledDatagramSocket socket;
-    public final static int ADLER_LIMIT = 9;
-
-
-
+    public final static int ADLER_SIZE = 8;
 
     /*
      * My little friends, dont forget to synchronize the socket! (the same to send and receive!)
@@ -51,8 +48,7 @@ public class LinkLayer implements Runnable{
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
-        } catch(IOException ioEx)
-        {
+        } catch(IOException ioEx) {
              Utilities.printError("Error creating DatagramSocket!(IOException)\n\n");
              System.exit(1);
         }
@@ -76,8 +72,8 @@ public class LinkLayer implements Runnable{
     }
 
     @Override
-    public void finalize()
-    {        
+    public void finalize() throws Throwable {
+        super.finalize();
         socket.close();
     }
 
@@ -100,16 +96,13 @@ public class LinkLayer implements Runnable{
 
         try {
 
-            sendPacket  = calculateCheckSum(f);
+            sendPacket = calculateCheckSum(f);
 
              if(sendPacket.length > ProtocolStack.MAX_MTU_SIZE )
                 return false;
             
-            
-            
-            packet = new DatagramPacket(sendPacket, sendPacket.length, InetAddress.getByName(h.getMAC().getIP()), Integer.parseInt(h.getMAC().getPort()));
-
-            
+            packet = new DatagramPacket(sendPacket, sendPacket.length,
+                    InetAddress.getByName(h.getMAC().getIP()), Integer.parseInt(h.getMAC().getPort()));
             socket.send(packet);
 
         } catch (UnknownHostException ex) {
@@ -119,16 +112,10 @@ public class LinkLayer implements Runnable{
             Utilities.printError("IOException - send packet!\n\n");
             System.exit(1);
         }
-
-
-
-
-
         return true;
     }
 
-    private byte[] calculateCheckSum(Frame f)
-    {
+    private byte[] calculateCheckSum(Frame f) {
          byte[] frameBytes = null;
          ObjectOutput out;
          ByteArrayOutputStream bos;
@@ -137,52 +124,41 @@ public class LinkLayer implements Runnable{
          byte[] aux;
 
         try {
-           
             bos = new ByteArrayOutputStream();
             out = new ObjectOutputStream(bos);
             out.writeObject(f);
             frameBytes = bos.toByteArray();
 
-
-
-            aux = new byte[ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT];
+            aux = new byte[ProtocolStack.MAX_MTU_SIZE-ADLER_SIZE];
+            System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
             
-            for(int i = 0; i < frameBytes.length; i++)
-                aux[i] = frameBytes[i];
-            
-            for(int i = frameBytes.length; i < ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT; i ++)
-                aux[i] = 0;
-                
-            
+            for(int i = frameBytes.length; i < ProtocolStack.MAX_MTU_SIZE - ADLER_SIZE; i ++)
+                aux[i] = 0;          
 
             Checksum checksumEngine = new Adler32();
             checksumEngine.update(aux, 0, aux.length);
-
-
-            
+       
             toSend = new byte[ProtocolStack.MAX_MTU_SIZE];
             
-            
-            longSum = new Long(checksumEngine.getValue()).toString().getBytes();
-
+            byte[] chkSum = new Long(checksumEngine.getValue()).toString().getBytes();
+            // Deixa o tamanho do checksum sempre em 8 bytes
+            longSum = new byte[ADLER_SIZE];
+            if (chkSum.length > ADLER_SIZE) {
+                System.arraycopy(chkSum, 0, longSum, 0, ADLER_SIZE);
+            } else if (chkSum.length < ADLER_SIZE) {
+                for (int i = chkSum.length; i < ADLER_SIZE; i++) {
+                    longSum[i] = 0;
+                }
+            }
             
             checksumEngine.reset();
-
-
-
-
-            for(int i = 0; i < aux.length ; i++)
-                toSend[i] = aux[i];
-
-            for(int i = aux.length -1, j = 0; j < longSum.length; i++, j++)
-            {
-                toSend[i] = longSum[j];
-               
-            }
+            // Coloca o checksum nos 8 primeiros bytes, depois coloca os dados
+            System.arraycopy(longSum, 0, toSend, 0, ADLER_SIZE);
+            System.arraycopy(aux, 0, toSend, ADLER_SIZE, aux.length);
 
         } catch (IOException ex) {
             Utilities.printError("IOException - checksum!\n\n");
-            System.exit(1);
+            return null;
         }
 
          return toSend;
@@ -204,38 +180,31 @@ public class LinkLayer implements Runnable{
                 boolean isCorrupted;
 
                 try {
-                     
                     socket.receive(receivedFrame);
                     frame = receivedFrame.getData();
 
-                    checksumEngine.update(frame, 0, ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT);
-                    
+                    data =  Arrays.copyOfRange(frame, ADLER_SIZE, ProtocolStack.MAX_MTU_SIZE);
+                    checksumEngine.update(data, 0, data.length);
 
                     byte[] result = new Long(checksumEngine.getValue()).toString().getBytes();
-                    
-
                     isCorrupted = false;
 
-                    for(int i = 0,j = ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT ; i < result.length-1; i++, j++)
-                        if(result[i] != frame[j])
+                    for(int i = 0; i < ADLER_SIZE; i++)
+                        if(result[i] != frame[i]) {
                             isCorrupted = true;
+                            System.err.print("merdaaaaaaaaaaaaaaaaa\n");
+                        }
 
-                    isCorrupted = false; // TODO fix CRC
+                    //isCorrupted = false; // TODO fix CRC
 
-
-                    if(isCorrupted)
-                    {
+                    if(isCorrupted) {
                         Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                         continue;
                     }
 
-                    data =  Arrays.copyOfRange(frame, 0, ProtocolStack.MAX_MTU_SIZE-ADLER_LIMIT);
-
                     // Getting the Object from the byte[]
                     ByteArrayInputStream bis = new ByteArrayInputStream(data);
                     ObjectInput in = new ObjectInputStream(bis);
-
-
 
                     // Now we have to cast the Object to a Frame
                     f = (Frame) in.readObject();
@@ -243,8 +212,6 @@ public class LinkLayer implements Runnable{
                     deliverToNetworkLayer(f);
 
                     checksumEngine.reset();
-
-
                 } catch(ClassNotFoundException ex) {
                     // The link layer should not fail because some frame is broken
                     Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
@@ -256,7 +223,6 @@ public class LinkLayer implements Runnable{
                 }
                  
             }
-        
     }
 
     private void deliverToNetworkLayer(Frame f) {
