@@ -131,7 +131,7 @@ public class LinkLayer implements Runnable{
             frameBytes = bos.toByteArray();
 
             aux = new byte[ProtocolStack.MAX_MTU_SIZE - ADLER_SIZE];
-            System.err.printf("aux: %d-frame: %d\n\n\n",aux.length,frameBytes.length);
+           // System.err.printf("aux: %d-frame: %d\n\n\n",aux.length,frameBytes.length);
 
             System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
             
@@ -221,7 +221,7 @@ public class LinkLayer implements Runnable{
 
                     try {
                     // Now we have to cast the Object to a Frame
-                        System.out.println("data: " + data.length);
+                        //System.out.println("data: " + data.length);
                     f = (Frame) in.readObject();//Utilities.toObject(data);
                     } catch(Exception e) {
                         e.printStackTrace();
