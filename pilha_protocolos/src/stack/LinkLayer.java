@@ -44,7 +44,8 @@ public class LinkLayer implements Runnable{
        // Singleton class. Can't be instantiated outside.
 
         try {
-            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),0,0,0);
+            socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),
+                    5, 5, 5);
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
@@ -129,13 +130,10 @@ public class LinkLayer implements Runnable{
             out.writeObject(f);
             frameBytes = bos.toByteArray();
 
-            aux = new byte[ProtocolStack.MAX_MTU_SIZE-ADLER_SIZE];
-            //System.err.printf("%d-%d\n\n\n",aux.length,frameBytes.length);
-            if(aux.length < frameBytes.length){
-                System.arraycopy(frameBytes, 0, aux, 0, aux.length);
-            } else {
-                System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
-            }
+            aux = new byte[ProtocolStack.MAX_MTU_SIZE - ADLER_SIZE];
+            System.err.printf("aux: %d-frame: %d\n\n\n",aux.length,frameBytes.length);
+
+            System.arraycopy(frameBytes, 0, aux, 0, frameBytes.length);
             
             for(int i = frameBytes.length; i < aux.length; i ++)
                 aux[i] = 0;          
@@ -218,12 +216,16 @@ public class LinkLayer implements Runnable{
                     }
 
                     // Getting the Object from the byte[]
-//                    ByteArrayInputStream bis = new ByteArrayInputStream(data);
-//                    ObjectInput in = new ObjectInputStream(bis);
+                    ByteArrayInputStream bis = new ByteArrayInputStream(data);
+                    ObjectInput in = new ObjectInputStream(bis);
 
+                    try {
                     // Now we have to cast the Object to a Frame
-                    f = (Frame) Utilities.toObject(data);
-
+                        System.out.println("data: " + data.length);
+                    f = (Frame) in.readObject();//Utilities.toObject(data);
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
                     deliverToNetworkLayer(f);
 
                     checksumEngine.reset();

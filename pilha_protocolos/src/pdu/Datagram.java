@@ -12,7 +12,7 @@ import java.io.Serializable;
  * @author tiago
  */
 public class Datagram implements Comparable, Serializable {
-    public static final int MAX_HEADER_SIZE = 25;
+    public static final int MAX_HEADER_SIZE = 100;
     public static final int TTL = 15;
     public static int NONE = -1;
 

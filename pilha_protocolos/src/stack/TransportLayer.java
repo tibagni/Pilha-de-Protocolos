@@ -115,11 +115,11 @@ public class TransportLayer {
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
         s.setFIN(true);
 
-        send(portMap,s);
+        send(portMap, s);
     }
 
     public void disconnect(int portMap) {
-        closeRDTConnection(portMap,synchronizedSockets().get(portMap).socket);
+        closeRDTConnection(portMap, synchronizedSockets().get(portMap).socket);
         //Remove o socket da lista...
         synchronizedSockets().remove(portMap);
         //Encerra a conexao RDT (TCP)
@@ -147,8 +147,10 @@ public class TransportLayer {
         segment.setWindowSize(socket.getWindowSize());
 
         retval = sendRDT(segment);
-        Utilities.log(Utilities.TRANSPORT_TAG,"SEND:%d-%d-%d\n\n\n\n",socket.getSeqNumber(),segment.getSeqNumber(),segment.getData().length);
-        if(socket.getSeqNumber() < segment.getSeqNumber() + segment.getData().length){ //Timers cant upgrade the seq number
+        Utilities.log(Utilities.TRANSPORT_TAG,"SEND:%d-%d-%d\n\n\n\n", socket.getSeqNumber(),
+                segment.getSeqNumber(), segment.getData().length);
+
+        if(socket.getSeqNumber() < segment.getSeqNumber() + segment.getData().length){
             socket.setSeqNumber(socket.getSeqNumber() + segment.getData().length);
         }
         return retval;
@@ -222,7 +224,7 @@ public class TransportLayer {
                 Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
                                              server.getSeqNumber(),
-                                             ackNum, // O primeiro ack e zero
+                                             ackNum,
                                              new byte[1], //manda 1 byte
                                              server.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
@@ -252,7 +254,7 @@ public class TransportLayer {
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
                 s.setAckValid(true);
 
-                send(segment.getDestPort(),s);
+                send(segment.getDestPort(), s);
 
             } else {
                 //fodeu total
@@ -270,7 +272,7 @@ public class TransportLayer {
                     Segment s = new Segment(segment.getDestPort(),
                                              segment.getSourcePort(),
                                              sw.socket.getSeqNumber(),
-                                             ackNum, // O primeiro ack e zero
+                                             ackNum,
                                              new byte[1], //manda 1 byte
                                              sw.socket.getWindowSize(), //window size
                                              ProtocolStack.TRASNPORT_PROTOCOL_RDT);
@@ -293,7 +295,7 @@ public class TransportLayer {
                         Segment s = new Segment(segment.getDestPort(),
                                                  segment.getSourcePort(),
                                                  sw.socket.getSeqNumber(),
-                                                 ackNum, // O primeiro ack e zero
+                                                 ackNum,
                                                  new byte[1], //manda 1 byte
                                                  sw.socket.getWindowSize(), //window size
                                                  ProtocolStack.TRASNPORT_PROTOCOL_RDT);
@@ -323,7 +325,6 @@ public class TransportLayer {
                 Iterator<Segment> it = sw.synchronizedSentSegments().iterator();
                 while(it.hasNext()){
                     Segment s = it.next();
-                    //System.out.printf("%d-%d-%d-%d\n\n",s.getSeqNumber(),s.getData().length,segment.getAck(),segment.getData().length);
                     if(s.getSeqNumber() + s.getData().length == segment.getAck()){
                         segToRemove = s;
                         Utilities.log(Utilities.TRANSPORT_TAG, "removendo segmento " + s.toString());
@@ -333,7 +334,6 @@ public class TransportLayer {
             }
         }
         if(sw != null){
-            //System.out.printf("AQUI PORRA\n\n\n\n\n");
             sw.stopTimer(segToRemove);
         }
 
@@ -414,18 +414,17 @@ public class TransportLayer {
         }
 
         public void startTimer(Segment s){
-         //   int index = synchronizedSentSegments().indexOf(s);
+            int index = synchronizedSentSegments().indexOf(s);
 
-          //  if(index == -1){ //So cria um timer se o segmento e novo ( nao e retransmissao)
+            if(index == -1) { //So cria um timer se o segmento e novo ( nao e retransmissao)
                 Timer t = new Timer();
                 SegmentTask task = new SegmentTask(s);
 
-                t.schedule(task,TIMEOUT,TIMEOUT+100);
+                t.schedule(task, TIMEOUT, TIMEOUT + 100);
 
                 synchronizedTimers().add(t);
                 synchronizedSentSegments().add(s);
-           // }
-
+            }
         }
 
         public List<Segment> synchronizedToSendSegments(){
@@ -444,7 +443,6 @@ public class TransportLayer {
 
             if(index != -1){
                 synchronizedSentSegments().remove(index);
-               // synchronizedSentSegments().remove(index);
                 synchronizedTimers().remove(index).cancel(); //para timer
 
             }
@@ -453,7 +451,7 @@ public class TransportLayer {
         private class SegmentTask extends TimerTask{
             private int times = 0; //quantas vezes foi enviado
             private Segment seg;
-            private final static int STOP_SEND = 10;
+            private final static int STOP_SEND = 5;
 
             public SegmentTask(Segment s){
                 seg = s;

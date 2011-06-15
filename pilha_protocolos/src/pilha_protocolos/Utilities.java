@@ -7,12 +7,15 @@ package pilha_protocolos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -38,7 +41,7 @@ public class Utilities {
     // FILTER (Mude o filtro antes da compilacao)
     // NO_FILTER imprime todos os logs (se LOG == true)
     private static final String NO_FILTER = "no_filter";
-    private static final String FILTER = NO_FILTER;
+    private static final String FILTER = TRANSPORT_TAG;
 
     public static int getObjectSize(Serializable o){
         byte[] bytes = null;
@@ -60,8 +63,8 @@ public class Utilities {
 
     public static byte[] toByteArray(Serializable o) {
         byte[] bytes = null;
-        ObjectOutput out;
-        ByteArrayOutputStream bos;
+        ObjectOutput out = null;
+        ByteArrayOutputStream bos = null;
 
         try {
             bos = new ByteArrayOutputStream();
@@ -71,6 +74,15 @@ public class Utilities {
         } catch(IOException ex) {
             logException(ex);
             return null;
+        } finally {
+            try {
+                out.close();
+                bos.close();
+            } catch (IOException ex) {
+                logException(ex);
+            } catch (NullPointerException ex) {
+                Utilities.logException(ex);
+            }
         }
 
         return bytes;
@@ -78,7 +90,7 @@ public class Utilities {
 
     public static Object toObject(byte[] byteArray) {
         ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
-        ObjectInput in;
+        ObjectInput in = null;
         Object o = null;
         try {
             in = new ObjectInputStream(bis);
@@ -89,6 +101,15 @@ public class Utilities {
         } catch(ClassNotFoundException e) {
             logException(e);
             return null;
+        } finally {
+            try {
+                in.close();
+                bis.close();
+            } catch (IOException ex) {
+                logException(ex);;
+            } catch (NullPointerException ex) {
+                Utilities.logException(ex);
+            }
         }
         return o;
     }
