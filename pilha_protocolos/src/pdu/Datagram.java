@@ -6,6 +6,7 @@
 package pdu;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  *
@@ -93,6 +94,27 @@ public class Datagram implements Comparable, Serializable {
 
     public void setLastDatagramFragment(boolean b) {
         isLastFragment = b;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        hash = 31 * hash + (this.source != null ? this.source.hashCode() : 0);
+        hash = 31 * hash + (this.destination != null ? this.destination.hashCode() : 0);
+        hash = 31 * hash + this.upperLayerProtocol;
+        hash = 31 * hash + this.ttl;
+        hash = 31 * hash + this.datagramId;
+        hash = 31 * hash + this.offset;
+        hash = 31 * hash + (this.isLastFragment ? 1 : 0);
+        hash = 31 * hash + Arrays.hashCode(this.data);
+        return hash;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Datagram{" + "source=" + source + "destination=" + destination + "upperLayerProtocol=" + upperLayerProtocol + "ttl=" + ttl + "datagramId=" + datagramId + "offset=" + offset + "isLastFragment=" + isLastFragment + "data=" + data + '}';
     }
 
     // Compara apenas o id do fragmento (nao e preciso mais do que isto)

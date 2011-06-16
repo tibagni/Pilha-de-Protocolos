@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import pdu.Datagram;
 import pdu.Datagram.TTLException;
 import pdu.Segment;
@@ -39,6 +41,8 @@ public class NetworkLayer implements Runnable, Serializable {
 
     private static final Object lock = new Object();
     private Routing routing;
+    private final static int MAX_RANDOM_VALUE = 99999999;
+    private final static int SLEEPING_TIME_TO_SEND = 30;
 
     private NetworkLayer() {
         routingTable = new HashMap<String, NextHost>();
@@ -83,7 +87,7 @@ public class NetworkLayer implements Runnable, Serializable {
         if(datagramId == Datagram.NONE) {
             Random r = new Random();
             Random r2 = new Random();
-            datagramId = r.nextInt() + r2.nextInt();
+            datagramId = (Math.abs(r.nextInt(MAX_RANDOM_VALUE)) + Math.abs(r2.nextInt(MAX_RANDOM_VALUE)));
         }
 
         // Pega next hop da routing table.
@@ -112,10 +116,16 @@ public class NetworkLayer implements Runnable, Serializable {
                         byteData, (fragOffset), true));
 
             for(Datagram fragment : fragments) {
-                Utilities.log(Utilities.NETWORK_TAG, "Enviando fragmento %d para camada de enlace",
-                        fragment.getOffset());
-                // Send to linkLayer - envia para camada de enlace
-                sendToLinkLayer(fragment, nextHost);
+                try
+                {
+                    Utilities.log(Utilities.NETWORK_TAG, "Enviando fragmento %d para camada de enlace - %s", fragment.getOffset(), Boolean.toString(fragment.isLastDatagramFragment()));
+                    // Send to linkLayer - envia para camada de enlace
+                    sendToLinkLayer(fragment, nextHost);
+                    Thread.sleep(SLEEPING_TIME_TO_SEND); //Nao encher buffer do receptor!
+                } catch (InterruptedException ex)
+                {
+                    Logger.getLogger(NetworkLayer.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         } else {
             // nao e necessario fragmentar datagrama
@@ -128,9 +138,10 @@ public class NetworkLayer implements Runnable, Serializable {
         LinkLayer.getInstance().send(datagram, ProtocolStack.NETWORK_PROTOCOL_NP, nextHost);
     }
 
-    /*package*/ void receive(byte[] datagramBytes) {
+    /*package*/synchronized void receive(byte[] datagramBytes) {
         try {
             Datagram datagram = (Datagram) Utilities.toObject(datagramBytes);
+           // Utilities.log(Utilities.NETWORK_TAG, "Completed:%s",datagram);
             // Se ip destino nao e o memso que localhost (pacote não é para este host), roteia
             if(!datagram.getDestination().equals(ProtocolStack.getLocalhost().getLogicalID())) {
                 forward(datagram);
@@ -153,6 +164,7 @@ public class NetworkLayer implements Runnable, Serializable {
                     if(d.isLastDatagramFragment()) completed = true;
                     dataSize += d.getData().length;
                     nextFragOffset += d.getData().length;
+                    Utilities.log(Utilities.NETWORK_TAG, "A:%s- size:%d-%d",d,d.getData().length,fragments.size());
                 }
                 if(completed) {
                     byte[] data = new byte[dataSize];
@@ -162,11 +174,13 @@ public class NetworkLayer implements Runnable, Serializable {
                         for(int i = 0; i < tempData.length; i++, j++)
                             data[j] = tempData[i];
                     }
+
                     try {
                         // Cria um datagrama completo
                         datagram = new Datagram(datagram.getSource(), datagram.getDestination(),
                                 datagram.getUpperLayerProtocol(), datagram.getTTL(), datagram.getDatagramId(),
                                 data);
+                        //Utilities.log(Utilities.NETWORK_TAG, "Completed:%s- size:%d",datagram,datagram.getData().length);
                         deliverToUpperLayer(datagram);
                         datagramFragments.remove(datagram.getDatagramId());
                         fragments = null;
@@ -212,6 +226,7 @@ public class NetworkLayer implements Runnable, Serializable {
 
         switch(datagram.getUpperLayerProtocol()) {
             case ProtocolStack.TRASNPORT_PROTOCOL_RDT:
+                Utilities.log(Utilities.NETWORK_TAG, "Mensagem RDT recebida");
                 Segment seg = (Segment) Utilities.toObject(datagram.getData());
                 TransportLayer.getInstance().receive(seg, datagram.getSource());
                 break;

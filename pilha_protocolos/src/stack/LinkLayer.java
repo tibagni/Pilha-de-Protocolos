@@ -45,7 +45,7 @@ public class LinkLayer implements Runnable{
 
         try {
             socket = new GarbledDatagramSocket(Integer.parseInt(ProtocolStack.getLocalhost().getMAC().getPort()),
-                    5, 5, 5);
+                    0, 0, 0);
         } catch(SocketException ex) {
             Utilities.printError("Error creating DatagramSocket!(SocketException)\n\n");
             System.exit(1);
