@@ -7,22 +7,42 @@ package pilha_protocolos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /**
  *
  * @author tiago
  */
 public class Utilities {
-    
+    private static final Logger logger = Logger.getLogger(Utilities.class.getName());
+    private static  FileHandler handler;
+
+    static {
+        try {
+            handler = new FileHandler("log.txt", true);
+        } catch (Exception ex) {
+            // Exception while creating log file
+            handler = null;
+            ex.printStackTrace();
+        } finally {
+            if (handler != null) {
+                logger.addHandler(handler);
+                handler.setFormatter(new SimpleFormatter());
+            }
+            logger.setLevel(Level.ALL);
+            logger.setUseParentHandlers(false); // Nao mostrar no console
+        }
+    }
+
     // ativar logs (true)
     private static final boolean LOG    = true;
     
@@ -106,7 +126,7 @@ public class Utilities {
                 in.close();
                 bis.close();
             } catch (IOException ex) {
-                logException(ex);;
+                logException(ex);
             } catch (NullPointerException ex) {
                 Utilities.logException(ex);
             }
@@ -116,38 +136,32 @@ public class Utilities {
 
     public static void print(String s, Object... args) {
         if(PRINT) {
-            System.out.printf("PRINT=> " + s, args);
-            System.out.println();
+            logger.log(Level.INFO, "PRINT=> " + s, args + "\n");
         }
     }
 
     public static void printError(String s, Object... args) {
-        System.err.printf("ERROR=> " + s, args);
-        System.err.println();
+        logger.log(Level.SEVERE, "ERROR=> " + s, args);
     }
 
     public static void log(String tag, String message, Object... args) {
         if(LOG) {
             if(FILTER.equals(NO_FILTER) || FILTER.equals(tag)) {
-                System.out.printf("LOG [" + tag + "]=> " + message, args);
-                System.out.println();
+                logger.log(Level.INFO, "LOG [" + tag + "]=> " + message, args + "\n");
             }
         }
     }
 
     public static void logException(Exception e) {
         if(LOG_EX) {
-            System.err.printf("EXCEPTION: " + e.getLocalizedMessage());
-            System.err.printf("\nMESSAGE: " + e.getMessage());
-            System.err.printf("\n===STACK TRACE===\n");
-            e.printStackTrace();
+            logger.log(Level.SEVERE, null, e);
         }
     }
 
     public static void logMethod() {
         StackTraceElement[] st = Thread.getAllStackTraces().get(Thread.currentThread());
         StackTraceElement element = st[3];
-        System.out.println("LOG [METHOD]=> " + element.getClassName()
-                + "." + element.getMethodName());
+        logger.log(Level.INFO, "LOG [METHOD]=> {0}.{1}",
+                new Object[]{element.getClassName(), element.getMethodName()});
     }
 }
