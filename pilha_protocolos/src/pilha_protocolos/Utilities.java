@@ -136,12 +136,13 @@ public class Utilities {
 
     public static void print(String s, Object... args) {
         if(PRINT) {
-            logger.log(Level.INFO, "PRINT=> " + s, args + "\n");
+            System.out.printf("PRINT=> " + s, args + "\n");
         }
     }
 
     public static void printError(String s, Object... args) {
-        logger.log(Level.SEVERE, "ERROR=> " + s, args);
+        System.err.printf("ERROR=> " + s, args);
+        System.err.println();
     }
 
     public static void log(String tag, String message, Object... args) {
