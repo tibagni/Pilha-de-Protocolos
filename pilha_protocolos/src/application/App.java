@@ -89,7 +89,16 @@ public class App {
             } else {
                 if (fileTransferInstance.sendResponse("accept")) {
                     commandExecuted = true;
-                    fileTransferInstance.receive();
+                    if (fileTransferInstance.receive()) {
+                        print("Arquivo recebido com sucesso!");
+                    }
+                    // Espera requisicao de envio de arquivo
+                    if (fileTransferInstance.receive()) {
+                        FileInfo fI = fileTransferInstance.getFileInfo();
+                        if (fI != null) {
+                            requestConfirmation(fI);
+                        }
+                    }
                 }
             }
         } else if ("deny".equals(commandParts[0])) {

@@ -17,6 +17,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import stack.ProtocolStack;
 
 /**
  *
@@ -28,7 +29,9 @@ public class Utilities {
 
     static {
         try {
-            handler = new FileHandler("log.txt", true);
+            String logName = ProtocolStack.getLocalhost().getLogicalID() +
+                    "-log.txt";
+            handler = new FileHandler(logName, true);
         } catch (Exception ex) {
             // Exception while creating log file
             handler = null;

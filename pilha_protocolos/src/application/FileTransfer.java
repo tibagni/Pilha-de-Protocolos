@@ -61,13 +61,16 @@ public class FileTransfer{
             result = true;
             step = STEP_TRANSFERRING;
         }
-
+        if ("deny".equals(resp)) {
+            step = STEP_WAITING_TO_RECEIVE;
+        }
         return result;
     }
     public boolean sendFile(String fileName){
         File f = new File(fileName);
         FileInputStream file = null;
         byte[] data = new byte[(int)f.length()];
+
         try {
             file = new FileInputStream(fileName);
             file.read(data);
@@ -82,8 +85,13 @@ public class FileTransfer{
             }
         }
         if (socket.send(data) > 0) {
-            step = STEP_TRANSFERRING;
+            // Enviado com sucesso
+            step = STEP_WAITING_TO_SEND;
         }
+        
+        // Mesmo que a transferencia nao ocorra com sucesso
+        // a maquina de estados deve voltar ao inicio
+        step = STEP_WAITING_TO_SEND;
         return true;
     }
     public boolean receive(){
@@ -101,6 +109,7 @@ public class FileTransfer{
             String confirmation = new String(socket.recieve());
             if ("accept".equals(confirmation)) {
                 result = true;
+                step = STEP_TRANSFERRING;
             } else {
                 step = STEP_WAITING_TO_SEND;
                 result = false;
@@ -113,17 +122,18 @@ public class FileTransfer{
             while(actualSize < actualFile.getSize()){
 
                 receivedAux = socket.recieve();
-                System.out.println(new String(receivedAux));
                 actualSize += receivedAux.length;
                 receivedFinal = concat(receivedFinal, receivedAux);
             }
             try {
                 file = new FileOutputStream("rec"+actualFile.getName());
                 file.write(receivedFinal);
-
+                result = true;
             } catch (Exception ex) {
                 Utilities.logException(ex);
             } finally {
+                // Volta ao estado inicial
+                step = STEP_WAITING_TO_RECEIVE;
                 try {
                     file.close();
                 } catch (IOException ex) {
