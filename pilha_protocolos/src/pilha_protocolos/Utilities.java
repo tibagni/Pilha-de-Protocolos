@@ -64,7 +64,7 @@ public class Utilities {
     // FILTER (Mude o filtro antes da compilacao)
     // NO_FILTER imprime todos os logs (se LOG == true)
     private static final String NO_FILTER = "no_filter";
-    private static final String FILTER = NETWORK_TAG;
+    private static final String FILTER = NO_FILTER;
 
     public static int getObjectSize(Serializable o){
         byte[] bytes = null;
