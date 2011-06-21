@@ -42,7 +42,7 @@ public class Utilities {
                 handler.setFormatter(new SimpleFormatter());
             }
             logger.setLevel(Level.ALL);
-            logger.setUseParentHandlers(false); // Nao mostrar no console
+            logger.setUseParentHandlers(true); // Nao mostrar no console
         }
     }
 
@@ -152,7 +152,8 @@ public class Utilities {
         if(LOG) {
             if(FILTER.equals(NO_FILTER) || FILTER.equals(tag)) {
                 String s = String.format("LOG [" + tag + "]=> " + message, args);
-                logger.log(Level.INFO, "{0}\n", s);
+                //logger.log(Level.INFO, "{0}\n", s);
+                System.out.println(s);
             }
         }
     }
