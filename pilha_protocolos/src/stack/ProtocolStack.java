@@ -79,49 +79,50 @@ public class ProtocolStack {
         pool.shutdown();
     }
 
-    public void send()
-    {
-        Scanner s = new Scanner(System.in);
-        int i = 1;
-        Host h;
-
-        while(true)
-        {
-            Utilities.log(Utilities.PROTOCOL_STACK_TAG, "--Current topology--\n");
-
-            while((h = graph.getHost(Integer.toString(i))) != null)
-            {
-                Utilities.log(Utilities.PROTOCOL_STACK_TAG, "ID:%s\tIP:%s\tPort:%s\n\n",
-                        h.getLogicalID(),h.getMAC().getIP(),h.getMAC().getPort());
-                i++;
-            }
-            i = 1;
-
-            if(getLocalhost().getLogicalID().equals("1")) {
-                try {
-                    Thread.sleep(6000);
-                } catch(InterruptedException ex) { }
-                String str = "hjk;hjkhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjkl" +
-                        "ertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyert" +
-                        "vbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnm" +
-                        "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas" +
-                        "rtyirtyurtyurtyurtyufyfghjfhfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfg" +
-                        "zxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxc" +
-                        "dfgdfghgfdfghgfdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfgh";
-                Utilities.print("Tamanho: %d", str.length());
-                NetworkLayer.getInstance().send(str.getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
-                    Utilities.log(Utilities.PROTOCOL_STACK_TAG, "Packet sent!\n\n");
-            }
-
-            break;
-        }
-       
-
-        //pool.shutdownNow();
-
-        //System.exit(1);
-        
-    }
+//*************************************TESTE
+//    public void send()
+//    {
+//        Scanner s = new Scanner(System.in);
+//        int i = 1;
+//        Host h;
+//
+//        while(true)
+//        {
+//            Utilities.log(Utilities.PROTOCOL_STACK_TAG, "--Current topology--\n");
+//
+//            while((h = graph.getHost(Integer.toString(i))) != null)
+//            {
+//                Utilities.log(Utilities.PROTOCOL_STACK_TAG, "ID:%s\tIP:%s\tPort:%s\n\n",
+//                        h.getLogicalID(),h.getMAC().getIP(),h.getMAC().getPort());
+//                i++;
+//            }
+//            i = 1;
+//
+//            if(getLocalhost().getLogicalID().equals("1")) {
+//                try {
+//                    Thread.sleep(6000);
+//                } catch(InterruptedException ex) { }
+//                String str = "hjk;hjkhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjklhjkl" +
+//                        "ertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyertyert" +
+//                        "vbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnmvbnm" +
+//                        "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas" +
+//                        "rtyirtyurtyurtyurtyufyfghjfhfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfghjfg" +
+//                        "zxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxcvzxc" +
+//                        "dfgdfghgfdfghgfdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfghdfgh";
+//                Utilities.print("Tamanho: %d", str.length());
+//                NetworkLayer.getInstance().send(str.getBytes(), "3", TRASNPORT_PROTOCOL_RDT);
+//                    Utilities.log(Utilities.PROTOCOL_STACK_TAG, "Packet sent!\n\n");
+//            }
+//
+//            break;
+//        }
+//
+//
+//        //pool.shutdownNow();
+//
+//        //System.exit(1);
+//        
+//    }
 
     public static void setLocalHost(Host h)
     {

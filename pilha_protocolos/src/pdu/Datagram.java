@@ -120,6 +120,7 @@ public class Datagram implements Comparable, Serializable {
     // Compara apenas o id do fragmento (nao e preciso mais do que isto)
     @Override
     public boolean equals(Object o) {
+        if (!(o instanceof Datagram)) return false;
         return compareTo(o) == 0 ? true : false;
     }
 

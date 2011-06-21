@@ -73,6 +73,7 @@ public class LinkLayer implements Runnable{
     }
 
     @Override
+    @SuppressWarnings("FinalizeDeclaration")
     public void finalize() throws Throwable {
         super.finalize();
         socket.close();
@@ -206,10 +207,6 @@ public class LinkLayer implements Runnable{
                            // System.err.print("merdaaaaaaaaaaaaaaaaa\n");
                         }
 
-
-
-                 //   isCorrupted = false; // TODO fix CRC
-
                     if(isCorrupted) {
                        Utilities.log(Utilities.LINK_TAG, "Corrupted packet arrived!\n");
                        continue;
@@ -224,7 +221,7 @@ public class LinkLayer implements Runnable{
                         //System.out.println("data: " + data.length);
                     f = (Frame) in.readObject();//Utilities.toObject(data);
                     } catch(Exception e) {
-                        e.printStackTrace();
+                        Utilities.logException(e);
                     }
                     deliverToNetworkLayer(f);
 

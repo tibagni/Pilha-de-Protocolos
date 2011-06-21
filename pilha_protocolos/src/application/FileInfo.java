@@ -46,7 +46,4 @@ public class FileInfo implements Serializable {
     public void setSize(long size) {
         this.size = size;
     }
-
-
-
 }

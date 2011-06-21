@@ -145,10 +145,11 @@ public class Utilities {
         System.err.println();
     }
 
-    public static void log(String tag, String message, Object... args) {
+    public synchronized static void log(String tag, String message, Object... args) {
         if(LOG) {
             if(FILTER.equals(NO_FILTER) || FILTER.equals(tag)) {
-                logger.log(Level.INFO, "LOG [" + tag + "]=> " + message, args + "\n");
+                String s = String.format("LOG [" + tag + "]=> " + message, args);
+                logger.log(Level.INFO, "{0}\n", s);
             }
         }
     }

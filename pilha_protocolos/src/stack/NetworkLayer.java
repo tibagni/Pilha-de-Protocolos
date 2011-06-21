@@ -242,7 +242,7 @@ public class NetworkLayer implements Runnable, Serializable {
             case ProtocolStack.ICMP_REQUEST:
                 // Manda ICMP replay
                 Utilities.log(Utilities.NETWORK_TAG, "Mensagem ICMP request recebida, enviando replay...");
-                send(new String("icmp replay").getBytes(), datagram.getSource(), ProtocolStack.ICMP_REPLAY);
+                send("icmp replay".getBytes(), datagram.getSource(), ProtocolStack.ICMP_REPLAY);
                 break;
             case ProtocolStack.ICMP_REPLAY:
                 // Ping respondido com sucesso.
@@ -286,7 +286,7 @@ public class NetworkLayer implements Runnable, Serializable {
      * @param hops Number of hops to hd
      * @return Se foi inserido com sucesso
      */
-    public boolean setHostInRoutingTable(Host hd, Host nh, int hops)
+    public final boolean setHostInRoutingTable(Host hd, Host nh, int hops)
     {
         Map<String, NextHost> m = 
                 Collections.synchronizedMap(routingTable);
@@ -468,7 +468,7 @@ public class NetworkLayer implements Runnable, Serializable {
 
         public DistanceVector(String d, int h)
         {
-            destinationIP = new String(d);
+            destinationIP = d;
             hops = h;
         }
 
