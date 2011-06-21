@@ -112,6 +112,7 @@ public class NetworkLayer implements Runnable, Serializable {
                 fragOffset += auxBytes.length;
             }
             // Adiciona ultimo fragmento na lista com a flag isLast setada para true
+            Utilities.log(Utilities.NETWORK_TAG, "Fragmento criado: %d", fragOffset);
             fragments.add(new Datagram(from, to, protocol, Datagram.TTL, datagramId,
                         byteData, (fragOffset), true));
 
